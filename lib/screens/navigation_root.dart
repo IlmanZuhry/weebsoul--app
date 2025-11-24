@@ -1,0 +1,39 @@
+import 'package:flutter/material.dart';
+import 'package:weebsoul/screens/home_page.dart';
+import 'package:weebsoul/screens/jadwal_page.dart';
+import 'package:weebsoul/widgets/custom_navbar.dart';
+
+class NavigationRoot extends StatefulWidget {
+  const NavigationRoot({super.key});
+
+  @override
+  State<NavigationRoot> createState() => _NavigationRootState();
+}
+
+class _NavigationRootState extends State<NavigationRoot> {
+  int currentIndex = 0;
+
+  final List<Widget> pages = const [
+    HomePage(),
+    SchedulePage(),
+    Placeholder(), // Riwayat (nanti diganti)
+    Placeholder(), // Favorit
+    Placeholder(), // Setting
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF1E1E1E),
+      body: pages[currentIndex], // <-- HALAMAN BERGANTI
+      bottomNavigationBar: CustomNavBar(
+        currentIndex: currentIndex,
+        onTap: (i) {
+          setState(() {
+            currentIndex = i; // <-- INDEX DIGANTI
+          });
+        },
+      ),
+    );
+  }
+}
