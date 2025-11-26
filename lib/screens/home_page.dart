@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:weebsoul/widgets/custom_navbar.dart';
 import 'package:flutter/services.dart';
+import 'package:weebsoul/data/anime_data.dart';
+import 'package:weebsoul/models/anime_info.dart';
+import 'package:weebsoul/screens/detail_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -264,14 +267,7 @@ class _HomePageState extends State<HomePage> {
 
                 const SizedBox(height: 10),
 
-                lastWatchedCard(
-                  title: "Chanto Suenai Kyuuetsuki-chan",
-                  img:
-                      "https://otakotaku.com/asset/img/anime/2025/09/chanto-suenai-kyuuketsuki-chan-68bac1f9b9363p.jpg",
-                  episode: "Episode 4",
-                  status: "On Going",
-                  rating: "6.71",
-                ),
+                lastWatchedCard(lastWatched[0]),
 
                 const SizedBox(height: 25),
 
@@ -293,33 +289,19 @@ class _HomePageState extends State<HomePage> {
 
                 const SizedBox(height: 10),
 
-                GridView.count(
-                  crossAxisCount: 3,
+                GridView.builder(
+                  itemCount: ongoingAnime.length >= 3 ? 3 : ongoingAnime.length,
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio: 0.58, // tweak kalau mau lebih tinggi/rendah
-                  children: [
-                    animeGridItem(
-                      img:
-                          "https://awsimages.detik.net.id/community/media/visual/2025/09/02/serial-anime-spy-x-family-season-3-1756791886541.webp?w=1200",
-                      title: "Spy x Family Season 3",
-                      rating: "8.19",
-                    ),
-                    animeGridItem(
-                      img:
-                          "https://otakotaku.com/asset/img/anime/2025/09/kao-ni-denai-kashiwada-san-68bc27a6e3df4p.jpg",
-                      title: "Kao ni Denai",
-                      rating: "6.74",
-                    ),
-                    animeGridItem(
-                      img:
-                          "https://i0.wp.com/anievo.id/wp-content/uploads/2025/08/weoifu.webp?ssl=1",
-                      title: "Tomodachi no Imouto",
-                      rating: "6.44",
-                    ),
-                  ],
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                    childAspectRatio: 0.58,
+                  ),
+                  itemBuilder: (context, index) {
+                    return animeGridItem(ongoingAnime[index]);
+                  },
                 ),
 
                 const SizedBox(height: 25),
@@ -336,34 +318,23 @@ class _HomePageState extends State<HomePage> {
 
                 const SizedBox(height: 10),
 
-                GridView.count(
-                  crossAxisCount: 3,
+                GridView.builder(
+                  itemCount: completedAnime.length >= 3
+                      ? 3
+                      : completedAnime.length,
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio: 0.58,
-                  children: [
-                    animeGridItem(
-                      img:
-                          "https://conime.id/images/anime/kaoru-hana-official-visual.webp",
-                      title: "Kaoru Hana wa Rin",
-                      rating: "8.66",
-                    ),
-                    animeGridItem(
-                      img:
-                          "https://awsimages.detik.net.id/community/media/visual/2025/06/02/poster-anime-kaiju-no8-season-2-1748866050954.jpeg?w=1200",
-                      title: "Kaijuu 8-gou Season 2",
-                      rating: "7.80",
-                    ),
-                    animeGridItem(
-                      img:
-                          "https://a.storyblok.com/f/178900/1080x1350/73f019de0e/sakamoto-days-part-2-key-visual.jpg/m/filters:quality(95)format(webp)",
-                      title: "Sakamoto Days Part 2",
-                      rating: "7.92",
-                    ),
-                  ],
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                    childAspectRatio: 0.58,
+                  ),
+                  itemBuilder: (context, index) {
+                    return animeGridItem(completedAnime[index]);
+                  },
                 ),
+
                 const SizedBox(height: 30),
                 Center(
                   child: Row(
@@ -480,135 +451,209 @@ class _HomePageState extends State<HomePage> {
   }
 
   // ======================================================
-  Widget lastWatchedCard({
-    required String title,
-    required String img,
-    required String episode,
-    required String status,
-    required String rating,
-  }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Stack(
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.network(
-                img,
-                width: 90,
-                height: 120,
-                fit: BoxFit.cover,
+  Widget lastWatchedCard(AnimeInfo anime) {
+    return GestureDetector(
+      onTap: () {
+        showDialog(
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              backgroundColor: const Color(0xFF2A2A2A),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
               ),
-            ),
-
-            Positioned(top: 6, right: 6, child: ratingBadge(rating)),
-          ],
-        ),
-
-        const SizedBox(width: 12),
-
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              title: const Text(
+                "Lanjutkan menonton?",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                  Text(
+                    anime.title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-
-                  Container(
-                    width: 30,
-                    height: 30,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 1.6),
-                    ),
-                    child: const Icon(
-                      Icons.play_arrow,
-                      color: Colors.white,
-                      size: 16,
-                    ),
+                  const SizedBox(height: 6),
+                  Text(
+                    anime.episode,
+                    style: const TextStyle(color: Colors.white70, fontSize: 14),
                   ),
                 ],
               ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text(
+                    "Batal",
+                    style: TextStyle(color: Colors.redAccent),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context); // tutup dialog
 
-              const SizedBox(height: 6),
+                    // buka halaman detail
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => DetailPage(anime: anime),
+                      ),
+                    );
+                  },
+                  child: const Text(
+                    "Lanjutkan",
+                    style: TextStyle(color: Colors.greenAccent),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
 
-              Text(
-                episode,
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.7),
-                  fontSize: 13,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Stack(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.network(
+                  anime.imageUrl,
+                  width: 90,
+                  height: 120,
+                  fit: BoxFit.cover,
                 ),
               ),
 
-              const SizedBox(height: 4),
-
-              Text(
-                status,
-                style: const TextStyle(
-                  color: Colors.greenAccent,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
+              Positioned(
+                top: 6,
+                right: 6,
+                child: ratingBadge(anime.rating.toString()),
               ),
             ],
           ),
-        ),
-      ],
+
+          const SizedBox(width: 12),
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        anime.title,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+
+                    Container(
+                      width: 30,
+                      height: 30,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 1.6),
+                      ),
+                      child: const Icon(
+                        Icons.play_arrow,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 6),
+
+                Text(
+                  anime.episode, // episode terbaru
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.7),
+                    fontSize: 13,
+                  ),
+                ),
+
+                const SizedBox(height: 4),
+
+                Text(
+                  "On Going", // bisa kamu ganti kalau ada status asli
+                  style: const TextStyle(
+                    color: Colors.greenAccent,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  Widget animeGridItem({
-    required String img,
-    required String title,
-    required String rating,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Stack(
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: Image.network(
-                img,
-                height: 120,
-                width: double.infinity,
-                fit: BoxFit.cover,
+  Widget animeGridItem(AnimeInfo anime) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => DetailPage(anime: anime)),
+        );
+      },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Stack(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: Image.network(
+                  anime.imageUrl,
+                  height: 120,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                ),
               ),
-            ),
 
-            // ⭐ RATING
-            Positioned(top: 6, right: 6, child: ratingBadge(rating)),
-          ],
-        ),
-
-        const SizedBox(height: 6),
-
-        Text(
-          title,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
+              // ⭐ RATING
+              Positioned(
+                top: 6,
+                right: 6,
+                child: ratingBadge(anime.rating.toString()),
+              ),
+            ],
           ),
-        ),
-      ],
+
+          const SizedBox(height: 6),
+
+          Text(
+            anime.title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
