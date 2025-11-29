@@ -1,26 +1,137 @@
 import 'package:flutter/material.dart';
 import 'package:weebsoul/data/anime_data.dart';
 import 'package:weebsoul/models/anime_info.dart';
-// ini mengakses data anime & model dari main.dart
 
 class SchedulePage extends StatelessWidget {
   const SchedulePage({super.key});
 
+  // ⭐ Warna Aksen Biru (Sama seperti Riwayat Page)
+  final Color accentBlue = const Color(0xFF29B6F6);
+
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          _buildDaySection(day: "Minggu", count: 18, animeList: mingguAnime),
-          _buildDaySection(day: "Senin", count: 2, animeList: seninAnime),
-          _buildDaySection(day: "Selasa", count: 7, animeList: selasaAnime),
-          _buildDaySection(day: "Rabu", count: 5, animeList: rabuAnime),
-          _buildDaySection(day: "Kamis", count: 8, animeList: kamisAnime),
-          _buildDaySection(day: "Jumat", count: 10, animeList: jumatAnime),
-          _buildDaySection(day: "Sabtu", count: 12, animeList: sabtuAnime),
+    return Scaffold(
+      backgroundColor: const Color(0xFF1E1E1E),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // ==============================================
+            // ⭐ HEADER AESTHETIC (FIXED HEIGHT)
+            // ==============================================
+            Container(
+              width: double.infinity,
+              height: 130, // ✅ SUDAH DIPERBESAR (Biar teks tidak kepotong)
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.lightBlueAccent.withOpacity(0.3),
+                    const Color(0xFF1E1E1E),
+                  ],
+                ),
+                borderRadius: const BorderRadius.only(
+                  bottomRight: Radius.circular(30),
+                ),
+              ),
+              child: Stack(
+                children: [
+                  Positioned(
+                    right: -10,
+                    top: -10,
+                    child: Icon(
+                      Icons.calendar_month, // Icon Kalender
+                      size: 100,
+                      color: Colors.white.withOpacity(0.05),
+                    ),
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.all(24.0),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Update Mingguan",
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                              letterSpacing: 1,
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            "Jadwal Rilis",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 24,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.5,
+                              fontFamily: 'Roboto',
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
 
-          const SizedBox(height: 20),
-        ],
+            // ==============================================
+            // CONTENT SCROLLABLE
+            // ==============================================
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.only(bottom: 20),
+                child: Column(
+                  children: [
+                    _buildDaySection(
+                      day: "Minggu",
+                      count: 18,
+                      animeList: mingguAnime,
+                    ),
+                    _buildDaySection(
+                      day: "Senin",
+                      count: 2,
+                      animeList: seninAnime,
+                    ),
+                    _buildDaySection(
+                      day: "Selasa",
+                      count: 7,
+                      animeList: selasaAnime,
+                    ),
+                    _buildDaySection(
+                      day: "Rabu",
+                      count: 5,
+                      animeList: rabuAnime,
+                    ),
+                    _buildDaySection(
+                      day: "Kamis",
+                      count: 8,
+                      animeList: kamisAnime,
+                    ),
+                    _buildDaySection(
+                      day: "Jumat",
+                      count: 10,
+                      animeList: jumatAnime,
+                    ),
+                    _buildDaySection(
+                      day: "Sabtu",
+                      count: 12,
+                      animeList: sabtuAnime,
+                    ),
+                    const SizedBox(
+                      height: 80,
+                    ), // Spacer bawah agar tidak ketutup navbar
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -33,7 +144,8 @@ class SchedulePage extends StatelessWidget {
     required int count,
     required List<AnimeInfo> animeList,
   }) {
-    const double twoRowsHeight = 350;
+    // Tinggi area grid (disesuaikan agar kartu tidak gepeng)
+    const double sectionHeight = 320;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -41,15 +153,15 @@ class SchedulePage extends StatelessWidget {
         _buildDayHeader(day, count),
 
         SizedBox(
-          height: twoRowsHeight,
+          height: sectionHeight,
           child: GridView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 12.0),
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
             scrollDirection: Axis.horizontal,
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 8,
-              mainAxisSpacing: 8,
-              childAspectRatio: 0.75,
+              crossAxisCount:
+                  1, // 1 Baris saja biar scroll samping enak dilihat
+              mainAxisSpacing: 12,
+              childAspectRatio: 1.45, // Mengatur rasio tinggi:lebar kartu
             ),
             itemCount: animeList.length,
             itemBuilder: (context, index) {
@@ -62,104 +174,118 @@ class SchedulePage extends StatelessWidget {
   }
 
   // =====================================================================
-  // HEADER HARI
+  // HEADER HARI (Gaya Garis Vertikal - Selaras Riwayat Page)
   // =====================================================================
   Widget _buildDayHeader(String day, int count) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-        decoration: BoxDecoration(
-          color: const Color(0xFF1E1E1E),
-          borderRadius: BorderRadius.circular(20.0),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              day,
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
+      child: Row(
+        children: [
+          // Garis Vertikal Biru
+          Container(
+            height: 24,
+            width: 4,
+            decoration: BoxDecoration(
+              color: accentBlue,
+              borderRadius: BorderRadius.circular(2),
+              boxShadow: [
+                BoxShadow(
+                  color: accentBlue.withOpacity(0.6),
+                  blurRadius: 6,
+                  spreadRadius: 1,
+                ),
+              ],
             ),
-            const SizedBox(width: 8),
-            Text(
-              "$count Anime",
-              style: TextStyle(
-                fontSize: 18,
-                color: Colors.lightBlue[300],
-                fontWeight: FontWeight.w500,
-              ),
+          ),
+          const SizedBox(width: 10),
+
+          // Nama Hari
+          Text(
+            day,
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
             ),
-          ],
-        ),
+          ),
+
+          const SizedBox(width: 8),
+
+          // Jumlah Anime (Warna Biru)
+          Text(
+            "$count Anime",
+            style: TextStyle(
+              fontSize: 18,
+              color: accentBlue, // Biru neon
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
       ),
     );
   }
 
   // =====================================================================
-  // CARD ANIME
+  // CARD ANIME (Updated Style - Selaras Riwayat Page)
   // =====================================================================
   Widget _buildAnimeCard(AnimeInfo anime) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
-        borderRadius: BorderRadius.circular(12),
+        color: const Color(0xFF252525), // Background kartu sedikit lebih terang
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.08),
+        ), // Border tipis
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Bagian Gambar
           Expanded(
-            flex: 3,
+            flex: 4,
             child: Stack(
               children: [
                 ClipRRect(
                   borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(12),
-                    topRight: Radius.circular(12),
+                    topLeft: Radius.circular(15),
+                    topRight: Radius.circular(15),
                   ),
                   child: Image.network(
                     anime.imageUrl,
                     width: double.infinity,
+                    height: double.infinity,
                     fit: BoxFit.cover,
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return const Center(
-                        child: CircularProgressIndicator(strokeWidth: 2.0),
-                      );
-                    },
-                    errorBuilder: (context, error, stackTrace) {
-                      return const Center(
-                        child: Icon(Icons.broken_image, size: 24),
-                      );
-                    },
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      color: Colors.grey[800],
+                      child: const Icon(Icons.broken_image),
+                    ),
                   ),
                 ),
 
-                // Rating
+                // Rating Badge (Pojok Kanan Atas)
                 Positioned(
-                  top: 4,
-                  right: 4,
+                  top: 8,
+                  right: 8,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 4,
-                      vertical: 1,
+                      horizontal: 6,
+                      vertical: 2,
                     ),
                     decoration: BoxDecoration(
                       color: Colors.black.withOpacity(0.7),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: Colors.white12),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.star, color: Colors.yellow, size: 10),
-                        const SizedBox(width: 2),
+                        const Icon(Icons.star, color: Colors.amber, size: 12),
+                        const SizedBox(width: 4),
                         Text(
                           anime.rating.toString(),
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 8,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ],
@@ -167,111 +293,73 @@ class SchedulePage extends StatelessWidget {
                   ),
                 ),
 
-                // Episode
+                // Episode Badge (Pojok Kiri Bawah Gambar)
                 Positioned(
-                  bottom: 4,
-                  left: 4,
-                  child: Text(
-                    anime.episode,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 10,
-                      shadows: [Shadow(blurRadius: 2, color: Colors.black)],
+                  bottom: 8,
+                  left: 8,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: accentBlue.withOpacity(0.9),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      anime.episode,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 10,
+                      ),
                     ),
                   ),
                 ),
-
-                // New Update
-                if (anime.isNew)
-                  Positioned(
-                    top: 4,
-                    left: 4,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 4,
-                        vertical: 1,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.blueAccent,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: const Text(
-                        "New",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 8,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
               ],
             ),
           ),
 
-          // Informasi bawah
+          // Bagian Informasi Teks
           Expanded(
             flex: 2,
             child: Padding(
-              padding: const EdgeInsets.all(6.0),
+              padding: const EdgeInsets.all(10.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
                     anime.title,
                     style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 11,
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
+                  const SizedBox(height: 6),
 
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  // Row Icon Views & Jam
+                  Row(
                     children: [
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.visibility_outlined,
-                            size: 10,
-                            color: Colors.grey[400],
-                          ),
-                          const SizedBox(width: 2),
-                          Expanded(
-                            child: Text(
-                              "${anime.views} v",
-                              style: TextStyle(
-                                fontSize: 8,
-                                color: Colors.grey[400],
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
+                      Icon(Icons.visibility, size: 12, color: Colors.grey[500]),
+                      const SizedBox(width: 4),
+                      Text(
+                        "${anime.views} v",
+                        style: TextStyle(fontSize: 10, color: Colors.grey[500]),
                       ),
-                      const SizedBox(height: 2),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.access_time,
-                            size: 10,
-                            color: Colors.grey[400],
-                          ),
-                          const SizedBox(width: 2),
-                          Expanded(
-                            child: Text(
-                              anime.duration,
-                              style: TextStyle(
-                                fontSize: 8,
-                                color: Colors.grey[400],
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
+                      const SizedBox(width: 10),
+                      Icon(
+                        Icons.access_time,
+                        size: 12,
+                        color: Colors.grey[500],
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        anime.duration,
+                        style: TextStyle(fontSize: 10, color: Colors.grey[500]),
                       ),
                     ],
                   ),

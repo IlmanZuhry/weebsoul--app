@@ -39,6 +39,8 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_launcher_icons: "^0.13.1"
+  flutter_native_splash: "^2.3.10"
   
 
   # The "flutter_lints" package below contains a set of recommended lints to
@@ -70,3 +72,17 @@ flutter:
       fonts:
         - asset: assets/Orbitron-Bold.ttf
           weight: 700
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/logo.png"
+  min_sdk_android: 21
+
+flutter_native_splash:
+  color: "#1E1E1E" # Warna background (Hitam Weebsoul)
+  image: "assets/logo.png" # Logo di tengah
+  android_12: # Khusus Android 12 ke atas
+    image: "assets/logo.png"
+    color: "#1E1E1E"
+  fullscreen: true
