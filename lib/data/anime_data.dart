@@ -647,6 +647,85 @@ final List<AnimeInfo> ongoingAnime = [
     views: "87K",
     duration: "23:00",
   ),
+  // === 4. DANDADAN ===
+  AnimeInfo(
+    title: "Dandadan",
+    // Menggunakan CDN MyAnimeList (Paling Stabil)
+    imageUrl: "https://img.anmosugoi.com/file/media-sugoi/2024/06/Dandadan-anime-visual-3.webp",
+    rating: 8.75,
+    episode: "Episode 8",
+    description: "Momo Ayase menjalin persahabatan yang tidak biasa dengan fanatik UFO di sekolahnya...",
+    genres: ["Action", "Comedy", "Supernatural"],
+    episodes: ["Episode 1", "Episode 2", "Episode 3", "Episode 4", "Episode 5", "Episode 6", "Episode 7", "Episode 8"],
+    views: "1.2M",
+    duration: "23:00",
+  ),
+
+  // === 5. BLUE LOCK S2 ===
+  AnimeInfo(
+    title: "Blue Lock Season 2",
+    imageUrl: "https://tse1.mm.bing.net/th/id/OIP.sZbu6VvLwO4K0bkKI8Y89QHaEK?rs=1&pid=ImgDetMain&o=7&rm=3",
+    rating: 8.22,
+    episode: "Episode 6",
+    description: "Asosiasi Sepak Bola Jepang meluncurkan program pelatihan baru yang ketat demi Piala Dunia...",
+    genres: ["Sports", "Thriller"],
+    episodes: ["Episode 1", "Episode 2", "Episode 3", "Episode 4", "Episode 5", "Episode 6"],
+    views: "890K",
+    duration: "24:00",
+  ),
+
+  // === 6. RE:ZERO S3 ===
+  AnimeInfo(
+    title: "Re:Zero kara Hajimeru Isekai Seikatsu 3rd Season",
+    imageUrl: "https://shikimori.one/uploads/poster/animes/54857/main_alt_2x-bb509995c5959f3399d24d8d3e4cadac.jpeg",
+    rating: 8.89,
+    episode: "Episode 7",
+    description: "Subaru Natsuki kembali menghadapi tantangan mematikan di dunia lain...",
+    genres: ["Drama", "Fantasy", "Suspense"],
+    episodes: ["Episode 1", "Episode 2", "Episode 3", "Episode 4", "Episode 5", "Episode 6", "Episode 7"],
+    views: "1.5M",
+    duration: "25:00",
+  ),
+
+  // === 7. SHANGRI-LA FRONTIER S2 ===
+  AnimeInfo(
+    title: "Shangri-La Frontier Season 2",
+    imageUrl: "https://static.animecorner.me/2024/09/1726149680-ba54301e4c97ada7764e8f9816c8a46e.jpg",
+    rating: 8.45,
+    episode: "Episode 5",
+    description: "Rakuro Hizutome kembali menaklukkan game VR tingkat dewa 'Shangri-La Frontier'...",
+    genres: ["Action", "Adventure", "Fantasy"],
+    episodes: ["Episode 1", "Episode 2", "Episode 3", "Episode 4", "Episode 5"],
+    views: "600K",
+    duration: "24:00",
+  ),
+
+  // === 8. BLEACH TYBW ===
+  AnimeInfo(
+    title: "Bleach: Sennen Kessen-hen - Soukoku-tan",
+    imageUrl: "https://tse1.mm.bing.net/th/id/OIP.wyHzj0ZGUHM3cQS2-7Bc2wHaKe?rs=1&pid=ImgDetMain&o=7&rm=3",
+    rating: 9.01,
+    episode: "Episode 6",
+    description: "Konflik antara Shinigami dan Quincy mencapai titik didihnya...",
+    genres: ["Action", "Adventure", "Supernatural"],
+    episodes: ["Episode 1", "Episode 2", "Episode 3", "Episode 4", "Episode 5", "Episode 6"],
+    views: "2.1M",
+    duration: "24:00",
+  ),
+
+  // === 9. BLUE BOX ===
+  AnimeInfo(
+    title: "Ao no Hako (Blue Box)",
+    imageUrl: "https://tse3.mm.bing.net/th/id/OIP.a7ytvDrNaBpbVlYIcISD2QHaKb?rs=1&pid=ImgDetMain&o=7&rm=3",
+    rating: 8.30,
+    episode: "Episode 9",
+    description: "Taiki Inomata berada di tim bulu tangkis, tetapi dia naksir Chinatsu Kano...",
+    genres: ["Romance", "Sports", "School"],
+    episodes: ["Episode 1", "Episode 2", "Episode 3", "Episode 4", "Episode 5", "Episode 6", "Episode 7", "Episode 8", "Episode 9"],
+    views: "750K",
+    duration: "23:00",
+  ),
+
 ];
 
 final List<AnimeInfo> completedAnime = [
@@ -746,3 +825,4 @@ final List<AnimeInfo> lastWatched = [
     duration: "23:00",
   ),
 ];
+

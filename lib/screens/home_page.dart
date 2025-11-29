@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:weebsoul/data/anime_data.dart';
 import 'package:weebsoul/models/anime_info.dart';
 import 'package:weebsoul/screens/detail_page.dart';
+import 'package:weebsoul/screens/ongoing_anime_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -272,21 +273,28 @@ class _HomePageState extends State<HomePage> {
                 const SizedBox(height: 25),
 
                 // ================= ONGOING =================
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: const [
-                    Text(
-                      "On Going Anime",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const OngoingAnimePage()),
+                    );
+                  },
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: const [
+                      Text(
+                        "On Going Anime",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    Icon(Icons.arrow_forward, color: Colors.white),
-                  ],
-                ),
-
+                      Icon(Icons.arrow_forward, color: Colors.white),
+                    ],
+                  ),
+                ),            
                 const SizedBox(height: 10),
 
                 GridView.builder(
