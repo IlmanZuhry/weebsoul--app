@@ -3,6 +3,7 @@ import 'package:weebsoul/screens/home_page.dart';
 import 'package:weebsoul/screens/jadwal_page.dart';
 import 'package:weebsoul/screens/riwayat_page.dart';
 import 'package:weebsoul/widgets/custom_navbar.dart';
+import 'package:weebsoul/screens/setting_page.dart';
 
 class NavigationRoot extends StatefulWidget {
   const NavigationRoot({super.key});
@@ -19,7 +20,7 @@ class _NavigationRootState extends State<NavigationRoot> {
     SchedulePage(),
     RiwayatPage(), // Riwayat (nanti diganti)
     Placeholder(), // Favorit
-    Placeholder(), // Setting
+    SettingPage(), // Setting
   ];
 
   @override
