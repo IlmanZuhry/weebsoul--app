@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:weebsoul/screens/home_page.dart';
 import 'package:weebsoul/screens/jadwal_page.dart';
+import 'package:weebsoul/screens/riwayat_page.dart';
 import 'package:weebsoul/widgets/custom_navbar.dart';
 
 class NavigationRoot extends StatefulWidget {
@@ -16,7 +17,7 @@ class _NavigationRootState extends State<NavigationRoot> {
   final List<Widget> pages = const [
     HomePage(),
     SchedulePage(),
-    Placeholder(), // Riwayat (nanti diganti)
+    RiwayatPage(), // Riwayat (nanti diganti)
     Placeholder(), // Favorit
     Placeholder(), // Setting
   ];
