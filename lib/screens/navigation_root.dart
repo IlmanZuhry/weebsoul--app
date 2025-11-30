@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:weebsoul/screens/home_page.dart';
 import 'package:weebsoul/screens/jadwal_page.dart';
+import 'package:weebsoul/screens/riwayat_page.dart';
 import 'package:weebsoul/widgets/custom_navbar.dart';
 import 'package:weebsoul/screens/setting_page.dart';
 import 'package:weebsoul/screens/subscribed_anime_page.dart';
@@ -18,7 +19,7 @@ class _NavigationRootState extends State<NavigationRoot> {
   final List<Widget> pages = const [
     HomePage(),
     SchedulePage(),
-    Placeholder(), // Riwayat (nanti diganti)
+    RiwayatPage(),
     SubscribedAnimePage(), // Favorit
     SettingPage(), // Setting
   ];

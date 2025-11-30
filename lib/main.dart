@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:weebsoul/screens/splash_page.dart';
-import 'package:weebsoul/screens/navigation_root.dart';
+import 'package:firebase_core/firebase_core.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+
+  print("🔥 Firebase terhubung dengan sukses!");
+
   runApp(const WeebsoulApp());
 }
 
@@ -42,6 +47,8 @@ class WeebsoulApp extends StatelessWidget {
           ),
         ),
       ),
+      // PERBAIKAN DI SINI:
+      // Mengarahkan ke SplashPage terlebih dahulu, bukan NavigationRoot
       home: const SplashPage(),
     );
   }
@@ -71,7 +78,7 @@ class AnimeInfo {
   });
 }
 
-// --- CONTOH DATA DUMMY (Agar Jadwal Page tidak error) ---
+// --- CONTOH DATA DUMMY ---
 
 // Data MINGGU
 final List<AnimeInfo> mingguAnime = List.generate(

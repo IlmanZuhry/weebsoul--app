@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "870226309614",
+    "project_id": "weebsoul-app",
+    "storage_bucket": "weebsoul-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:870226309614:android:1db80a5bc6f68a180d5eff",
+        "android_client_info": {
+          "package_name": "com.example.weebsoul"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB23tklo1NCDkp8PwQyyPUi-k7n7zcZbfA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
