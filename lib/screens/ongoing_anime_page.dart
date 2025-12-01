@@ -23,8 +23,19 @@ class _OngoingAnimePageState extends State<OngoingAnimePage> {
 
   // 2. OPSI PILIHAN FILTER
   final Map<String, List<String>> filterOptions = {
-    "Genre": ["All", "Action", "Adventure", "Fantasy", "Sports", "Romance", "Supernatural", "Comedy", "Sci-Fi", "Drama"],
-    "Status": ["On Going", "Completed"],
+    "Genre": [
+      "All",
+      "Action",
+      "Adventure",
+      "Fantasy",
+      "Sports",
+      "Romance",
+      "Supernatural",
+      "Comedy",
+      "Sci-Fi",
+      "Drama",
+    ],
+    "Status": ["All", "On Going", "Completed"],
     "Content Type": ["All", "TV", "Movie", "OVA"],
     "Type": ["All", "Sub", "Dub"],
     "Order": ["Newest", "Highest Rated", "A-Z"],
@@ -42,10 +53,10 @@ class _OngoingAnimePageState extends State<OngoingAnimePage> {
   @override
   void initState() {
     super.initState();
-    
+
     // Gabungkan semua data
     masterList = [...ongoingAnime, ...completedAnime, ...mingguAnime];
-    
+
     // Listener untuk pencarian real-time
     _searchController.addListener(() {
       _applyFilter();
@@ -70,15 +81,18 @@ class _OngoingAnimePageState extends State<OngoingAnimePage> {
         result = result.where((anime) => ongoingAnime.contains(anime));
       } else if (selectedFilters["Status"] == "Completed") {
         result = result.where((anime) => completedAnime.contains(anime));
+      } else {
+        // Status == "All"
+        result = masterList;
       }
 
       // --- B. FILTER GENRE ---
       if (selectedFilters["Genre"] != "All") {
         result = result.where((anime) {
-           if (anime.genres.isNotEmpty) {
-             return anime.genres.contains(selectedFilters["Genre"]);
-           }
-           return anime.genre == selectedFilters["Genre"];
+          if (anime.genres.isNotEmpty) {
+            return anime.genres.contains(selectedFilters["Genre"]);
+          }
+          return anime.genre == selectedFilters["Genre"];
         });
       }
 
@@ -93,11 +107,11 @@ class _OngoingAnimePageState extends State<OngoingAnimePage> {
       // --- D. FILTER ORDER ---
       var resultList = result.toList();
       if (selectedFilters["Order"] == "Highest Rated") {
-        resultList.sort((a, b) => b.rating.compareTo(a.rating)); 
+        resultList.sort((a, b) => b.rating.compareTo(a.rating));
       } else if (selectedFilters["Order"] == "A-Z") {
-        resultList.sort((a, b) => a.title.compareTo(b.title)); 
-      } 
-      
+        resultList.sort((a, b) => a.title.compareTo(b.title));
+      }
+
       displayedAnime = resultList;
     });
   }
@@ -130,9 +144,9 @@ class _OngoingAnimePageState extends State<OngoingAnimePage> {
               Text(
                 "Select $filterKey",
                 style: const TextStyle(
-                  color: Colors.white, 
-                  fontSize: 18, 
-                  fontWeight: FontWeight.bold
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 10),
@@ -144,17 +158,23 @@ class _OngoingAnimePageState extends State<OngoingAnimePage> {
                     bool isSelected = selectedFilters[filterKey] == option;
                     return ListTile(
                       leading: Icon(
-                        icon, 
-                        color: isSelected ? Colors.blueAccent : Colors.grey
+                        icon,
+                        color: isSelected ? Colors.blueAccent : Colors.grey,
                       ),
                       title: Text(
                         option,
                         style: TextStyle(
-                          color: isSelected ? Colors.blueAccent : Colors.white70,
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          color: isSelected
+                              ? Colors.blueAccent
+                              : Colors.white70,
+                          fontWeight: isSelected
+                              ? FontWeight.bold
+                              : FontWeight.normal,
                         ),
                       ),
-                      trailing: isSelected ? const Icon(Icons.check, color: Colors.blueAccent) : null,
+                      trailing: isSelected
+                          ? const Icon(Icons.check, color: Colors.blueAccent)
+                          : null,
                       onTap: () {
                         setState(() {
                           selectedFilters[filterKey] = option;
@@ -203,8 +223,13 @@ class _OngoingAnimePageState extends State<OngoingAnimePage> {
                 ),
               )
             : Text(
-                selectedFilters["Status"] == "Completed" ? "Completed Anime" : "On Going Anime",
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                selectedFilters["Status"] == "Completed"
+                    ? "Completed Anime"
+                    : "On Going Anime",
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
         actions: [
           // === ICON SEARCH BERUBAH JADI CLOSE SAAT AKTIF ===
@@ -227,7 +252,11 @@ class _OngoingAnimePageState extends State<OngoingAnimePage> {
               // Tapi di sini saya biarkan tetap muncul agar user tetap bisa memfilter hasil pencarian
               const Text(
                 "Filter",
-                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 12),
 
@@ -274,13 +303,17 @@ class _OngoingAnimePageState extends State<OngoingAnimePage> {
                         //Tidak ditemukan saat search
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.search_off, size: 50, color: Colors.white38),
+                          const Icon(
+                            Icons.search_off,
+                            size: 50,
+                            color: Colors.white38,
+                          ),
                           const SizedBox(height: 10),
                           Text(
-                            _isSearching 
-                                ? "Tidak ditemukan: \"${_searchController.text}\"" 
-                                : "Tidak ada anime ditemukan", 
-                            style: const TextStyle(color: Colors.white38)
+                            _isSearching
+                                ? "Tidak ditemukan: \"${_searchController.text}\""
+                                : "Tidak ada anime ditemukan",
+                            style: const TextStyle(color: Colors.white38),
                           ),
                         ],
                       ),
@@ -289,12 +322,13 @@ class _OngoingAnimePageState extends State<OngoingAnimePage> {
                       itemCount: displayedAnime.length,
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 3,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 16,
-                        childAspectRatio: 0.58,
-                      ),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 3,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 16,
+                            childAspectRatio: 0.52,
+                          ),
                       itemBuilder: (context, index) {
                         return _animeGridItem(displayedAnime[index]);
                       },
@@ -317,19 +351,23 @@ class _OngoingAnimePageState extends State<OngoingAnimePage> {
           color: Colors.grey[850],
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: selectedFilters[label] != "All" && selectedFilters[label] != "Any"
-                ? Colors.blueAccent.withOpacity(0.5) 
+            color:
+                selectedFilters[label] != "All" &&
+                    selectedFilters[label] != "Any"
+                ? Colors.blueAccent.withOpacity(0.5)
                 : Colors.white10,
           ),
         ),
         child: Row(
           children: [
             Icon(
-              icon, 
-              color: selectedFilters[label] != "All" && selectedFilters[label] != "Any"
-                  ? Colors.blueAccent 
+              icon,
+              color:
+                  selectedFilters[label] != "All" &&
+                      selectedFilters[label] != "Any"
+                  ? Colors.blueAccent
                   : Colors.grey,
-              size: 18
+              size: 18,
             ),
             const SizedBox(width: 8),
             Expanded(
@@ -381,17 +419,26 @@ class _OngoingAnimePageState extends State<OngoingAnimePage> {
                   width: double.infinity,
                   fit: BoxFit.cover,
                   errorBuilder: (ctx, err, stack) => Container(
-                    height: 140, color: Colors.grey[800], 
-                    child: const Icon(Icons.broken_image, color: Colors.white24)
+                    height: 140,
+                    color: Colors.grey[800],
+                    child: const Icon(
+                      Icons.broken_image,
+                      color: Colors.white24,
+                    ),
                   ),
                 ),
               ),
               Positioned(
-                top: 6, right: 6,
+                top: 6,
+                right: 6,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
-                    color: Colors.black54, borderRadius: BorderRadius.circular(6),
+                    color: Colors.black54,
+                    borderRadius: BorderRadius.circular(6),
                   ),
                   child: Row(
                     children: [
@@ -399,7 +446,11 @@ class _OngoingAnimePageState extends State<OngoingAnimePage> {
                       const SizedBox(width: 3),
                       Text(
                         anime.rating.toString(),
-                        style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ],
                   ),
@@ -407,12 +458,16 @@ class _OngoingAnimePageState extends State<OngoingAnimePage> {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Text(
             anime.title,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),
