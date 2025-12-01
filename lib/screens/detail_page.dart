@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/anime_info.dart';
+import 'package:weebsoul/screens/vidio_page.dart';
 
 class DetailPage extends StatelessWidget {
   final AnimeInfo anime;
@@ -154,41 +155,60 @@ class DetailPage extends StatelessWidget {
             const SizedBox(height: 10),
 
             // 🔥 EPISODE LIST
+            // 🔥 EPISODE LIST
             ListView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: anime.episodes.length,
               itemBuilder: (context, index) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 6,
-                  ),
-                  child: Container(
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => VideoPlayerPage(
+                          animeTitle: anime.title,
+                          title: "${anime.title} - ${anime.episodes[index]}",
+                          videoUrl:
+                              "https://samplelib.com/lib/preview/mp4/sample-5s.mp4", // dummy video
+                          description: anime.description,
+                          episodeCount: anime.episodes.length,
+                          views: anime.views,
+                        ),
+                      ),
+                    );
+                  },
+                  child: Padding(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 16,
+                      horizontal: 16,
+                      vertical: 6,
                     ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF2A2A2A),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          anime.episodes[index],
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 15,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 16,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2A2A2A),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            anime.episodes[index],
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 15,
+                            ),
                           ),
-                        ),
-                        const Icon(
-                          Icons.play_arrow,
-                          color: Colors.white,
-                          size: 26,
-                        ),
-                      ],
+                          const Icon(
+                            Icons.play_arrow,
+                            color: Colors.white,
+                            size: 26,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 );
