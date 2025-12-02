@@ -20,7 +20,7 @@ class _NavigationRootState extends State<NavigationRoot> {
     HomePage(),
     SchedulePage(),
     RiwayatPage(),
-    SubscribedAnimePage(), // Favorit
+    FavoritePage(), // Favorit
     SettingPage(), // Setting
   ];
 

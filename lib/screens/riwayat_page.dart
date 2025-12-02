@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:weebsoul/data/anime_data.dart'; // Import Data
+import 'package:weebsoul/models/anime_info.dart'; // Import Model
 
 class RiwayatPage extends StatelessWidget {
   const RiwayatPage({super.key});
 
-  // ⭐ Warna Biru Kustom (Mirip referensi gambar '2 Anime')
+  // ⭐ Warna Biru Kustom
   final Color accentBlue = const Color(0xFF29B6F6);
 
   @override
@@ -20,13 +22,12 @@ class RiwayatPage extends StatelessWidget {
               width: double.infinity,
               height: 120,
               decoration: BoxDecoration(
-                // Gradient Biru ke Gelap
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    Colors.lightBlueAccent.withOpacity(0.3), // Biru transparan
-                    const Color(0xFF1E1E1E), // Menyatu ke background
+                    Colors.lightBlueAccent.withOpacity(0.3),
+                    const Color(0xFF1E1E1E),
                   ],
                 ),
                 borderRadius: const BorderRadius.only(
@@ -35,7 +36,6 @@ class RiwayatPage extends StatelessWidget {
               ),
               child: Stack(
                 children: [
-                  // Dekorasi Ikon Background
                   Positioned(
                     right: -20,
                     top: -20,
@@ -45,8 +45,6 @@ class RiwayatPage extends StatelessWidget {
                       color: Colors.white.withOpacity(0.05),
                     ),
                   ),
-
-                  // Text Judul
                   Padding(
                     padding: const EdgeInsets.all(24.0),
                     child: Column(
@@ -66,12 +64,10 @@ class RiwayatPage extends StatelessWidget {
                           "Riwayat Menonton",
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 26, // Ukuran font diperbesar sedikit
-                            fontWeight: FontWeight.w900, // Lebih tebal (Bold)
-                            letterSpacing:
-                                0.5, // Spasi antar huruf biar tidak kaku
-                            fontFamily:
-                                'Roboto', // Pastikan font default terlihat bagus
+                            fontSize: 26,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.5,
+                            fontFamily: 'Roboto',
                             shadows: [
                               BoxShadow(
                                 color: accentBlue.withOpacity(0.5),
@@ -89,7 +85,7 @@ class RiwayatPage extends StatelessWidget {
             ),
 
             // ==============================================
-            // ISI LIST
+            // ISI LIST (DINAMIS DARI DATA)
             // ==============================================
             Expanded(
               child: SingleChildScrollView(
@@ -99,59 +95,27 @@ class RiwayatPage extends StatelessWidget {
                   children: [
                     const SizedBox(height: 20),
 
-                    // Group 1: 13 Hari Lalu
-                    HistoryDateSection(
-                      date: "13 hari lalu",
-                      accentColor: accentBlue,
-                      children: [
-                        HistoryItem(
-                          img:
-                              "https://cdn.myanimelist.net/images/anime/1078/144598.jpg",
-                          title: "Nageki no Bourei wa Intai shitai Season 2",
-                          episode: "Episode 4",
-                          watchedTime: "08:28",
-                          totalTime: "23:50",
-                          progress: 0.35,
-                          accentColor: accentBlue,
-                        ),
-                      ],
-                    ),
+                    // SECTION 1: Terakhir Ditonton (Dari List lastWatched)
+                    if (lastWatched.isNotEmpty)
+                      _buildHistorySection(
+                        date: "Baru Saja",
+                        animeList: lastWatched,
+                      ),
 
-                    // Group 2: 29 Hari Lalu
-                    HistoryDateSection(
-                      date: "29 hari lalu",
-                      accentColor: accentBlue,
-                      children: [
-                        HistoryItem(
-                          img:
-                              "https://awsimages.detik.net.id/community/media/visual/2025/03/09/one-punch-man-season-3-1741505097754.jpeg?w=700&q=90",
-                          title: "One Punch Man Season 3",
-                          episode: "Episode 1",
-                          watchedTime: "08:04",
-                          totalTime: "24:01",
-                          progress: 0.33,
-                          accentColor: accentBlue,
-                        ),
-                      ],
-                    ),
+                    // SECTION 2: Minggu Ini (Dari List ongoingAnime)
+                    // Kita ambil 3 item pertama saja sebagai contoh
+                    if (ongoingAnime.isNotEmpty)
+                      _buildHistorySection(
+                        date: "Minggu Ini",
+                        animeList: ongoingAnime.take(3).toList(),
+                      ),
 
-                    // Group 3: Tanggal Spesifik
-                    HistoryDateSection(
-                      date: "05 Oct 2025",
-                      accentColor: accentBlue,
-                      children: [
-                        HistoryItem(
-                          img:
-                              "https://cdn.myanimelist.net/images/anime/1257/127166.jpg",
-                          title: "Witch Watch",
-                          episode: "Episode 25",
-                          watchedTime: "19:59",
-                          totalTime: "24:02",
-                          progress: 0.8,
-                          accentColor: accentBlue,
-                        ),
-                      ],
-                    ),
+                    // SECTION 3: Bulan Lalu (Dari List completedAnime)
+                    if (completedAnime.isNotEmpty)
+                      _buildHistorySection(
+                        date: "Bulan Lalu",
+                        animeList: completedAnime.take(3).toList(),
+                      ),
 
                     const SizedBox(height: 80),
                   ],
@@ -163,10 +127,39 @@ class RiwayatPage extends StatelessWidget {
       ),
     );
   }
+
+  // ======================================================
+  // FUNGSI BUILDER UNTUK GROUP HISTORY
+  // ======================================================
+  Widget _buildHistorySection({
+    required String date,
+    required List<AnimeInfo> animeList,
+  }) {
+    return HistoryDateSection(
+      date: date,
+      accentColor: accentBlue,
+      children: animeList.map((anime) {
+        // Simulasi progress karena di data belum ada field 'progress'
+        // (Di aplikasi asli, ini diambil dari database local)
+        double randomProgress = (anime.title.length % 10) / 10 + 0.1;
+        if (randomProgress > 1.0) randomProgress = 0.9;
+
+        return HistoryItem(
+          img: anime.imageUrl,
+          title: anime.title,
+          episode: anime.episode,
+          watchedTime: "12:30", // Placeholder
+          totalTime: anime.duration,
+          progress: randomProgress,
+          accentColor: accentBlue,
+        );
+      }).toList(),
+    );
+  }
 }
 
 // ======================================================
-// WIDGET PENDUKUNG
+// WIDGET PENDUKUNG (TIDAK BERUBAH)
 // ======================================================
 
 class HistoryDateSection extends StatelessWidget {
@@ -188,7 +181,6 @@ class HistoryDateSection extends StatelessWidget {
       children: [
         Row(
           children: [
-            // Garis vertikal kecil warna biru
             Container(
               height: 18,
               width: 4,
@@ -249,15 +241,14 @@ class HistoryItem extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 20),
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: const Color(
-          0xFF252525,
-        ), // Sedikit lebih terang dari background utama
+        color: const Color(0xFF252525),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.white.withOpacity(0.08)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Thumbnail
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
             child: Image.network(
@@ -276,12 +267,15 @@ class HistoryItem extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 15),
+
+          // Info Detail
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const SizedBox(height: 4),
+                // Judul
                 Text(
                   title,
                   style: const TextStyle(
@@ -294,7 +288,7 @@ class HistoryItem extends StatelessWidget {
                 ),
                 const SizedBox(height: 6),
 
-                // Tulisan Episode jadi Biru
+                // Episode (Biru)
                 Text(
                   episode,
                   style: TextStyle(
@@ -305,6 +299,7 @@ class HistoryItem extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
 
+                // Waktu
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -320,7 +315,7 @@ class HistoryItem extends StatelessWidget {
                 ),
                 const SizedBox(height: 6),
 
-                // Progress Bar Biru
+                // Progress Bar
                 ClipRRect(
                   borderRadius: BorderRadius.circular(4),
                   child: LinearProgressIndicator(

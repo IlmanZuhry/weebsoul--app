@@ -149,7 +149,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
                             children: [
                               _buildInfoButton(Icons.thumb_up, "3.4K"),
                               _buildInfoButton(Icons.message, "14"),
-                              _buildInfoButton(Icons.hd, "480p"),
+                              _buildInfoButton(Icons.hd, "360p"),
                               _buildInfoButton(Icons.download, "Download"),
                             ],
                           ),
