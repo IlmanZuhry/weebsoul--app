@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:weebsoul/screens/welcome_page.dart';
+import 'package:weebsoul/screens/navigation_root.dart';
 import 'package:weebsoul/widgets/app_logo.dart';
 import 'package:weebsoul/widgets/page_transition.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -27,13 +29,33 @@ class _SplashPageState extends State<SplashPage>
 
     _fadeIn = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
 
-    // Auto navigate after 2.5 seconds
+    // ⚡ Cek status login setelah 2.5 detik
     Timer(const Duration(milliseconds: 2500), () {
-      Navigator.pushReplacement(
-        context,
-        FadeSlidePageRoute(page: const WelcomePage()),
-      );
+      _checkAuthStatus();
     });
+  }
+
+  // ⚡ Cek apakah user sudah login atau belum
+  Future<void> _checkAuthStatus() async {
+    final session = Supabase.instance.client.auth.currentSession;
+    
+    if (session != null) {
+      // ✅ User sudah login → Langsung ke Home
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          FadeSlidePageRoute(page: const NavigationRoot()),
+        );
+      }
+    } else {
+      // ❌ User belum login → Ke Welcome/Login
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          FadeSlidePageRoute(page: const WelcomePage()),
+        );
+      }
+    }
   }
 
   @override

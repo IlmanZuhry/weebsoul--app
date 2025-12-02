@@ -5,6 +5,7 @@ import 'package:weebsoul/data/anime_data.dart';
 import 'package:weebsoul/models/anime_info.dart';
 import 'package:weebsoul/screens/detail_page.dart';
 import 'package:weebsoul/screens/ongoing_anime_page.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -16,6 +17,9 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int currentBanner = 0;
   int currentBottomIndex = 0;
+
+  // ⚡ Data user dari Supabase
+  String userName = "User";
 
   final List<String> banners = [
     "https://awsimages.detik.net.id/community/media/visual/2025/03/09/one-punch-man-season-3-1741505097754.jpeg?w=700&q=90",
@@ -43,6 +47,17 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     _pageController = PageController(initialPage: initialPage);
     currentBanner = initialPage % banners.length;
+    _loadUserData(); // ⚡ Load user data
+  }
+
+  // ⚡ Ambil username dari Supabase
+  Future<void> _loadUserData() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user != null) {
+      setState(() {
+        userName = user.userMetadata?['username'] ?? "User";
+      });
+    }
   }
 
   @override
@@ -86,9 +101,9 @@ class _HomePageState extends State<HomePage> {
                           ),
                         ),
                         const SizedBox(width: 10),
-                        const Text(
-                          "Rizky Galon",
-                          style: TextStyle(
+                        Text(
+                          userName,
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 18,
                             fontWeight: FontWeight.bold,

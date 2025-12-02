@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:weebsoul/screens/edit_profile_page.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SettingPage extends StatefulWidget {
   const SettingPage({super.key});
@@ -15,6 +16,28 @@ class _SettingPageState extends State<SettingPage> {
   bool isNewAnimeOn = true;
   bool isSubscribeOn = true;
   bool isReplyOn = true;
+
+  // ⚡ Data user dari Supabase
+  String userName = "Loading...";
+  String userEmail = "Loading...";
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  // ⚡ Ambil data user dari Supabase Auth
+  Future<void> _loadUserData() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user != null) {
+      setState(() {
+        userEmail = user.email ?? "No Email";
+        // Ambil username dari metadata
+        userName = user.userMetadata?['username'] ?? "User";
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -68,7 +91,7 @@ class _SettingPageState extends State<SettingPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        "24-056 M Rizky P Lubis",
+                        userName,
                         style: GoogleFonts.poppins(
                           color: Colors.white,
                           fontSize: 16,
@@ -77,7 +100,7 @@ class _SettingPageState extends State<SettingPage> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        "lubisr002@gmail.com",
+                        userEmail,
                         style: GoogleFonts.poppins(
                           color: Colors.grey[400],
                           fontSize: 13,
@@ -101,14 +124,16 @@ class _SettingPageState extends State<SettingPage> {
                 color: Colors.grey,
                 size: 16,
               ),
-              onTap: () {
+              onTap: () async {
                 // Navigasi ke EditProfilePage
-                Navigator.push(
+                await Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) => const EditProfilePage(),
                   ),
                 );
+                // ⚡ Reload data setelah kembali dari edit profile
+                _loadUserData();
               },
             ),
 
@@ -169,7 +194,78 @@ class _SettingPageState extends State<SettingPage> {
                   ),
                 ),
                 onPressed: () {
-                  // Tambahkan logika logout di sini
+                  // ⚡ POPUP KONFIRMASI LOGOUT
+                  showDialog(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return AlertDialog(
+                        backgroundColor: const Color(0xFF2C2C2C),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        title: Text(
+                          "Konfirmasi Logout",
+                          style: GoogleFonts.poppins(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        content: Text(
+                          "Apakah Anda yakin ingin keluar dari akun?",
+                          style: GoogleFonts.poppins(
+                            color: Colors.white70,
+                          ),
+                        ),
+                        actions: [
+                          // Tombol Batal
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: Text(
+                              "Batal",
+                              style: GoogleFonts.poppins(
+                                color: Colors.grey,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          // Tombol Logout
+                          TextButton(
+                            onPressed: () async {
+                              Navigator.pop(context); // Tutup dialog
+                              
+                              // ⚡ SUPABASE LOGOUT
+                              try {
+                                await Supabase.instance.client.auth.signOut();
+                                if (context.mounted) {
+                                  // Navigate to login page and clear navigation stack
+                                  Navigator.of(context).pushNamedAndRemoveUntil(
+                                    '/login',
+                                    (route) => false,
+                                  );
+                                }
+                              } catch (e) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text("Gagal logout, coba lagi."),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                }
+                              }
+                            },
+                            child: Text(
+                              "Logout",
+                              style: GoogleFonts.poppins(
+                                color: Colors.redAccent,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  );
                 },
                 child: Text(
                   "Logout",

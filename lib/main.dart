@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:weebsoul/screens/splash_page.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:weebsoul/screens/login_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -59,6 +60,9 @@ class WeebsoulApp extends StatelessWidget {
       // PERBAIKAN DI SINI:
       // Mengarahkan ke SplashPage terlebih dahulu, bukan NavigationRoot
       home: const SplashPage(),
+      routes: {
+        '/login': (context) => const LoginPage(),
+      },
     );
   }
 }
