@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:weebsoul/data/anime_data.dart';
 import 'package:weebsoul/models/anime_info.dart';
+import 'package:weebsoul/screens/detail_page.dart';
 
 class FavoritePage extends StatelessWidget {
   const FavoritePage({super.key});
 
-  // Warna Aksen Biru (Konsisten dengan page lain)
   final Color accentBlue = const Color(0xFF29B6F6);
 
   @override
   Widget build(BuildContext context) {
-    // 💡 SEMENTARA: Kita gabungkan beberapa data anime biar terlihat banyak
-    // Nanti bisa diganti dengan logic database/local storage yang asli
+    // Menggabungkan beberapa data anime untuk simulasi Favorit
     final List<AnimeInfo> favoriteList = [
       ...mingguAnime,
       ...seninAnime,
@@ -24,7 +23,7 @@ class FavoritePage extends StatelessWidget {
         child: Column(
           children: [
             // ==============================================
-            // ⭐ HEADER AESTHETIC (Style Favorit)
+            // HEADER FAVORIT
             // ==============================================
             Container(
               width: double.infinity,
@@ -44,12 +43,11 @@ class FavoritePage extends StatelessWidget {
               ),
               child: Stack(
                 children: [
-                  // Icon Background Transparan
                   Positioned(
                     right: -10,
                     top: -10,
                     child: Icon(
-                      Icons.favorite, // Ikon Hati
+                      Icons.favorite,
                       size: 100,
                       color: Colors.white.withOpacity(0.05),
                     ),
@@ -90,21 +88,21 @@ class FavoritePage extends StatelessWidget {
             ),
 
             // ==============================================
-            // GRID CONTENT
+            // GRID CONTENT (PERBAIKAN TAMPILAN)
             // ==============================================
             Expanded(
               child: GridView.builder(
                 padding: const EdgeInsets.all(16),
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2, // 2 Kolom ke samping
+                  crossAxisCount: 3, // 3 Kolom agar pas seperti di Home
                   crossAxisSpacing: 12, // Jarak antar kolom
-                  mainAxisSpacing: 12, // Jarak antar baris
+                  mainAxisSpacing: 16, // Jarak antar baris
                   childAspectRatio:
-                      0.70, // Rasio tinggi:lebar kartu (Poster Style)
+                      0.65, // 🔥 FIX: Rasio ini membuat kartu proporsional (tidak gepeng/panjang)
                 ),
                 itemCount: favoriteList.length,
                 itemBuilder: (context, index) {
-                  return _buildFavoriteCard(favoriteList[index]);
+                  return _buildFavoriteCard(context, favoriteList[index]);
                 },
               ),
             ),
@@ -114,34 +112,28 @@ class FavoritePage extends StatelessWidget {
     );
   }
 
-  // =====================================================================
-  // KARTU ANIME (Updated Style - Sesuai Request)
-  // =====================================================================
-  Widget _buildFavoriteCard(AnimeInfo anime) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(
-          0xFF252525,
-        ), // Background kartu agak terang dikit dari BG utama
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.08),
-        ), // Border tipis
-      ),
+  // ===============================================================
+  // KARTU ANIME (Desain diperbaiki)
+  // ===============================================================
+  Widget _buildFavoriteCard(BuildContext context, AnimeInfo anime) {
+    return GestureDetector(
+      onTap: () {
+        // Navigasi ke Detail Page saat diklik
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => DetailPage(anime: anime)),
+        );
+      },
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Bagian Gambar (Expanded biar menuhin area atas)
+          // BAGIAN GAMBAR & RATING
           Expanded(
-            flex: 3, // Proporsi gambar lebih besar
             child: Stack(
               children: [
                 // Gambar Anime
                 ClipRRect(
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(15),
-                    topRight: Radius.circular(15),
-                  ),
+                  borderRadius: BorderRadius.circular(12),
                   child: Image.network(
                     anime.imageUrl,
                     width: double.infinity,
@@ -149,15 +141,26 @@ class FavoritePage extends StatelessWidget {
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) => Container(
                       color: Colors.grey[800],
-                      child: const Icon(Icons.broken_image),
+                      child: const Center(
+                        child: Icon(Icons.broken_image, color: Colors.white54),
+                      ),
                     ),
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Container(
+                        color: Colors.grey[900],
+                        child: const Center(
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      );
+                    },
                   ),
                 ),
 
-                // ⭐ RATING BADGE (Pojok Kanan Atas)
+                // Rating Badge (Pojok Kanan Atas)
                 Positioned(
-                  top: 8,
-                  right: 8,
+                  top: 6,
+                  right: 6,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 6,
@@ -166,12 +169,11 @@ class FavoritePage extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: Colors.black.withOpacity(0.7),
                       borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: Colors.white12),
                     ),
                     child: Row(
                       children: [
                         const Icon(Icons.star, color: Colors.amber, size: 10),
-                        const SizedBox(width: 4),
+                        const SizedBox(width: 3),
                         Text(
                           anime.rating.toString(),
                           style: const TextStyle(
@@ -184,54 +186,22 @@ class FavoritePage extends StatelessWidget {
                     ),
                   ),
                 ),
-
-                // ⭐ EPISODE BADGE (Pojok Kiri Bawah - Overlay Gambar)
-                Positioned(
-                  bottom: 8,
-                  left: 8,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: accentBlue, // Warna biru
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      anime.episode, // Contoh: "Episode 7"
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 10,
-                      ),
-                    ),
-                  ),
-                ),
               ],
             ),
           ),
 
-          // Bagian Teks Bawah (Hanya Judul)
-          Expanded(
-            flex: 2, // Proporsi teks
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(10, 10, 10, 0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    anime.title,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
+          const SizedBox(height: 8),
+
+          // JUDUL (Maksimal 2 baris)
+          Text(
+            anime.title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              height: 1.2, // Jarak antar baris teks biar rapi
             ),
           ),
         ],
