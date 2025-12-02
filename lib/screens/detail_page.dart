@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/anime_info.dart';
 import 'package:weebsoul/screens/vidio_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:weebsoul/services/video_service.dart';
 
 class DetailPage extends StatelessWidget {
   final AnimeInfo anime;
@@ -162,35 +163,36 @@ class DetailPage extends StatelessWidget {
               physics: const NeverScrollableScrollPhysics(),
               itemCount: anime.episodes.length,
               itemBuilder: (context, index) {
+                
                 return GestureDetector(
-                  onTap: () {
-                    // 🔥 LOGIKA UNTUK VIDEO SPY X FAMILY EPISODE 1 (SUPABASE)
-                    String videoUrlToUse = "https://samplelib.com/lib/preview/mp4/sample-5s.mp4"; // Default Dummy
+                  onTap: () async {
+                    // ⚡ AMBIL VIDEO URL DARI DATABASE
+                    // Extract episode number from string (e.g., "Episode 1" -> 1)
+                    final episodeNumber = int.tryParse(
+                      anime.episodes[index].replaceAll(RegExp(r'[^0-9]'), '')
+                    ) ?? 0;
 
-                    // Cek jika ini adalah Spy x Family dan Episode 1
-                    if (anime.title.contains("Spy x Family") && anime.episodes[index] == "Episode 1") {
-                      // ⚡ AMBIL DARI SUPABASE STORAGE
-                      // Pastikan Anda sudah membuat bucket bernama 'Vidio_Anime' dan upload file 'spyeps1.mp4'
-                      final supabase = Supabase.instance.client;
-                      videoUrlToUse = supabase
-                          .storage
-                          .from('Vidio_Anime') // Nama bucket
-                          .getPublicUrl('spyeps1.mp4'); // Nama file yang diupload
-                    }
-
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => VideoPlayerPage(
-                          animeTitle: anime.title,
-                          title: "${anime.title} - ${anime.episodes[index]}",
-                          videoUrl: videoUrlToUse,
-                          description: anime.description,
-                          episodeCount: anime.episodes.length,
-                          views: anime.views,
-                        ),
-                      ),
+                    // Fetch video URL from database
+                    final videoUrl = await VideoService.getVideoUrl(
+                      anime.title,
+                      episodeNumber,
                     );
+
+                    if (context.mounted) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => VideoPlayerPage(
+                            animeTitle: anime.title,
+                            title: "${anime.title} - ${anime.episodes[index]}",
+                            videoUrl: videoUrl, // ⚡ Use fetched URL
+                            description: anime.description,
+                            episodeCount: anime.episodes.length,
+                            views: anime.views,
+                          ),
+                        ),
+                      );
+                    }
                   },
                   child: Padding(
                     padding: const EdgeInsets.symmetric(

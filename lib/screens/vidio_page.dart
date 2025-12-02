@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:chewie/chewie.dart';
 import 'package:video_player/video_player.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:weebsoul/services/video_service.dart';
 
 class VideoPlayerPage extends StatefulWidget {
   final String animeTitle;
@@ -156,81 +157,74 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
                           const SizedBox(height: 20),
 
                           // ===============================
-                          // EPISODE LIST (TIDAK DI KUNCI)
-                          // ===============================
-                          const Text(
-                            "Episode List",
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
+// EPISODE LIST
+// ===============================
+const Text(
+  "Episode List",
+  style: TextStyle(
+    fontSize: 20,
+    fontWeight: FontWeight.bold,
+    color: Colors.white,
+  ),
+),
+const SizedBox(height: 12),
 
-                          const SizedBox(height: 12),
+SizedBox(
+  height: 60,
+  child: ListView.separated(
+    scrollDirection: Axis.horizontal,
+    itemCount: widget.episodeCount,
+    separatorBuilder: (_, __) => const SizedBox(width: 10),
+    itemBuilder: (context, index) {
+      final ep = index + 1;
 
-                          SizedBox(
-                            height: 60,
-                            child: ListView.separated(
-                              scrollDirection: Axis.horizontal,
-                              itemCount: widget.episodeCount,
-                              separatorBuilder: (_, __) => const SizedBox(width: 10),
-                              itemBuilder: (context, index) {
-                                final ep = index + 1;
-                                return GestureDetector(
-                                  onTap: () {
-                                    // 🔥 LOGIKA UNTUK VIDEO SPY X FAMILY EPISODE 1 (SUPABASE)
-                                    String nextVideoUrl = "https://samplelib.com/lib/preview/mp4/sample-5s.mp4"; // Default Dummy
+      return GestureDetector(
+        onTap: () async {
+          final nextVideoUrl = await VideoService.getVideoUrl(
+            widget.animeTitle,
+            ep,
+          );
 
-                                    // Cek jika ini adalah Spy x Family dan Episode 1
-                                    if (widget.animeTitle.contains("Spy x Family") && ep == 1) {
-                                      // ⚡ AMBIL DARI SUPABASE STORAGE
-                                      final supabase = Supabase.instance.client;
-                                      nextVideoUrl = supabase
-                                          .storage
-                                          .from('Vidio_Anime') // Nama bucket
-                                          .getPublicUrl('spyeps1.mp4'); // Nama file yang diupload
-                                    }
+          if (!context.mounted) return;
 
-                                    Navigator.pushReplacement(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => VideoPlayerPage(
-                                          animeTitle: widget.animeTitle, // WAJIB
-                                          title: "Episode $ep",
-                                          videoUrl: nextVideoUrl, // Gunakan URL baru
-                                          description: widget.description,
-                                          episodeCount: widget.episodeCount,
-                                          views: widget.views,
-                                        ),
-                                      ),
-                                    );
-                                  },
-
-                                  child: Container(
-                                    width: 55,
-                                    decoration: BoxDecoration(
-                                      color: ep == selectedEpisode
-                                          ? Colors.white
-                                          : Colors.grey.shade800,
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    alignment: Alignment.center,
-                                    child: Text(
-                                      "$ep",
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        color: ep == selectedEpisode
-                                            ? Colors.black
-                                            : Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => VideoPlayerPage(
+                animeTitle: widget.animeTitle,
+                title: "Episode $ep",
+                videoUrl: nextVideoUrl,
+                description: widget.description,
+                episodeCount: widget.episodeCount,
+                views: widget.views,
+              ),
+            ),
+          );
+        },
+        child: Container(
+          width: 55,
+          decoration: BoxDecoration(
+            color: ep == selectedEpisode
+                ? Colors.white
+                : Colors.grey.shade800,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            "$ep",
+            style: TextStyle(
+              fontSize: 18,
+              color: ep == selectedEpisode
+                  ? Colors.black
+                  : Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      );
+    },
+  ),
+),
 
                           const SizedBox(height: 20),
 
