@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:weebsoul/widgets/page_transition.dart';
 import 'package:weebsoul/screens/navigation_root.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class RegisterPage extends StatelessWidget {
   const RegisterPage({super.key});
@@ -83,12 +84,62 @@ class RegisterPage extends StatelessWidget {
 
             // TOMBOL REGISTER
             ElevatedButton(
-              onPressed: () {
-                // Logika Register (Sementara langsung masuk ke Home)
-                Navigator.pushReplacement(
-                  context,
-                  FadeSlidePageRoute(page: const NavigationRoot()),
-                );
+              onPressed: () async {
+                final email = emailController.text.trim();
+                final password = passwordController.text.trim();
+                final confirmPassword = confirmPasswordController.text.trim();
+                final username = usernameController.text.trim();
+
+                if (email.isEmpty || password.isEmpty || username.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Semua kolom harus diisi!")),
+                  );
+                  return;
+                }
+
+                if (password != confirmPassword) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Password tidak sama!")),
+                  );
+                  return;
+                }
+
+                try {
+                  // ⚡ SUPABASE SIGN UP
+                  await Supabase.instance.client.auth.signUp(
+                    email: email,
+                    password: password,
+                    data: {'username': username}, // Simpan username di metadata
+                  );
+
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Registrasi Berhasil! Silakan Login."),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                    Navigator.pop(context); // Balik ke Login Page
+                  }
+                } on AuthException catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(e.message),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Terjadi kesalahan, coba lagi nanti."),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blueAccent,

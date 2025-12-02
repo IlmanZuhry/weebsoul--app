@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:chewie/chewie.dart';
 import 'package:video_player/video_player.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class VideoPlayerPage extends StatefulWidget {
   final String animeTitle;
@@ -62,348 +63,378 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
     return Scaffold(
       backgroundColor: const Color(0xFF1A1A1A),
       body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ===============================
-            // VIDEO PLAYER
-            // ===============================
-            AspectRatio(
-              aspectRatio: 16 / 9,
-              child:
-                  _chewieController != null &&
-                      _videoController.value.isInitialized
-                  ? Chewie(controller: _chewieController!)
-                  : const Center(
-                      child: CircularProgressIndicator(color: Colors.white),
-                    ),
-            ),
+        child: OrientationBuilder(
+          builder: (context, orientation) {
+            final isLandscape = orientation == Orientation.landscape;
 
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Judul Video
-                    // ⭐ Judul Video (lebih besar)
-                    Text(
-                      "${widget.animeTitle} - Episode $selectedEpisode",
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                        height: 1.3,
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ===============================
+                // VIDEO PLAYER
+                // ===============================
+                isLandscape
+                    ? Expanded(
+                        child: Center(
+                          child: _chewieController != null &&
+                                  _videoController.value.isInitialized
+                              ? Chewie(controller: _chewieController!)
+                              : const CircularProgressIndicator(color: Colors.white),
+                        ),
+                      )
+                    : AspectRatio(
+                        aspectRatio: 16 / 9,
+                        child: _chewieController != null &&
+                                _videoController.value.isInitialized
+                            ? Chewie(controller: _chewieController!)
+                            : const Center(
+                                child: CircularProgressIndicator(color: Colors.white),
+                              ),
                       ),
-                    ),
 
-                    const SizedBox(height: 6),
-
-                    // ⭐ Subtitle kecil (Episode, views, tanggal)
-                    Row(
-                      children: [
-                        Text(
-                          "Episode $selectedEpisode • ",
-                          style: const TextStyle(
-                            color: Colors.grey,
-                            fontSize: 13,
+                // Jika LANDSCAPE, sembunyikan detail di bawahnya
+                if (!isLandscape)
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Judul Video
+                          // ⭐ Judul Video (lebih besar)
+                          Text(
+                            "${widget.animeTitle} - Episode $selectedEpisode",
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                              height: 1.3,
+                            ),
                           ),
-                        ),
-                        const Icon(
-                          Icons.visibility,
-                          size: 16,
-                          color: Colors.grey,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          "${widget.views} • 3 Dec 2025",
-                          style: const TextStyle(
-                            color: Colors.grey,
-                            fontSize: 13,
+
+                          const SizedBox(height: 6),
+
+                          // ⭐ Subtitle kecil (Episode, views, tanggal)
+                          Row(
+                            children: [
+                              Text(
+                                "Episode $selectedEpisode • ",
+                                style: const TextStyle(
+                                  color: Colors.grey,
+                                  fontSize: 13,
+                                ),
+                              ),
+                              const Icon(
+                                Icons.visibility,
+                                size: 16,
+                                color: Colors.grey,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                "${widget.views} • 3 Dec 2025",
+                                style: const TextStyle(
+                                  color: Colors.grey,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                      ],
-                    ),
 
-                    const SizedBox(height: 16),
+                          const SizedBox(height: 16),
 
-                    // Like, comment, quality
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        _buildInfoButton(Icons.thumb_up, "3.4K"),
-                        _buildInfoButton(Icons.message, "14"),
-                        _buildInfoButton(Icons.hd, "480p"),
-                        _buildInfoButton(Icons.download, "Download"),
-                      ],
-                    ),
+                          // Like, comment, quality
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              _buildInfoButton(Icons.thumb_up, "3.4K"),
+                              _buildInfoButton(Icons.message, "14"),
+                              _buildInfoButton(Icons.hd, "480p"),
+                              _buildInfoButton(Icons.download, "Download"),
+                            ],
+                          ),
 
-                    const SizedBox(height: 20),
+                          const SizedBox(height: 20),
 
-                    // ===============================
-                    // EPISODE LIST (TIDAK DI KUNCI)
-                    // ===============================
-                    const Text(
-                      "Episode List",
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
+                          // ===============================
+                          // EPISODE LIST (TIDAK DI KUNCI)
+                          // ===============================
+                          const Text(
+                            "Episode List",
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
 
-                    const SizedBox(height: 12),
+                          const SizedBox(height: 12),
 
-                    SizedBox(
-                      height: 60,
-                      child: ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: widget.episodeCount,
-                        separatorBuilder: (_, __) => const SizedBox(width: 10),
-                        itemBuilder: (context, index) {
-                          final ep = index + 1;
-                          return GestureDetector(
-                            onTap: () {
-                              Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => VideoPlayerPage(
-                                    animeTitle: widget.animeTitle, // WAJIB
-                                    title: "Episode $ep",
-                                    videoUrl: widget.videoUrl,
-                                    description: widget.description,
-                                    episodeCount: widget.episodeCount,
-                                    views: widget.views,
+                          SizedBox(
+                            height: 60,
+                            child: ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: widget.episodeCount,
+                              separatorBuilder: (_, __) => const SizedBox(width: 10),
+                              itemBuilder: (context, index) {
+                                final ep = index + 1;
+                                return GestureDetector(
+                                  onTap: () {
+                                    // 🔥 LOGIKA UNTUK VIDEO SPY X FAMILY EPISODE 1 (SUPABASE)
+                                    String nextVideoUrl = "https://samplelib.com/lib/preview/mp4/sample-5s.mp4"; // Default Dummy
+
+                                    // Cek jika ini adalah Spy x Family dan Episode 1
+                                    if (widget.animeTitle.contains("Spy x Family") && ep == 1) {
+                                      // ⚡ AMBIL DARI SUPABASE STORAGE
+                                      final supabase = Supabase.instance.client;
+                                      nextVideoUrl = supabase
+                                          .storage
+                                          .from('Vidio_Anime') // Nama bucket
+                                          .getPublicUrl('spyeps1.mp4'); // Nama file yang diupload
+                                    }
+
+                                    Navigator.pushReplacement(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => VideoPlayerPage(
+                                          animeTitle: widget.animeTitle, // WAJIB
+                                          title: "Episode $ep",
+                                          videoUrl: nextVideoUrl, // Gunakan URL baru
+                                          description: widget.description,
+                                          episodeCount: widget.episodeCount,
+                                          views: widget.views,
+                                        ),
+                                      ),
+                                    );
+                                  },
+
+                                  child: Container(
+                                    width: 55,
+                                    decoration: BoxDecoration(
+                                      color: ep == selectedEpisode
+                                          ? Colors.white
+                                          : Colors.grey.shade800,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      "$ep",
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        color: ep == selectedEpisode
+                                            ? Colors.black
+                                            : Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+
+                          const SizedBox(height: 20),
+
+                          // ===============================
+                          // DESKRIPSI
+                          // ===============================
+                          Text(
+                            widget.description,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Colors.white70,
+                              height: 1.6,
+                            ),
+                          ),
+
+                          const SizedBox(height: 20),
+
+                          // ===============================
+                          // KOMENTAR WARNING
+                          // ===============================
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade900,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: RichText(
+                              text: const TextSpan(
+                                children: [
+                                  TextSpan(
+                                    text:
+                                        "Jangan lupa untuk membuat komentar yang sopan dan santun dan mengikuti ",
+                                    style: TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                  TextSpan(
+                                    text: "Aturan Komunitas",
+                                    style: TextStyle(
+                                      color: Colors.blueAccent,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(height: 20),
+
+                          // ===============================
+                          // TITLE COMMENT
+                          // ===============================
+                          const Text(
+                            "1.7K Comments",
+                            style: TextStyle(
+                              fontSize: 20,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              
+                            ),
+                          ),
+
+                          const SizedBox(height: 12),
+
+                          // ===============================
+                          // FILTER BUTTONS (TOP / NEWEST)
+                          // ===============================
+                          Row(
+                            children: [
+                              GestureDetector(
+                                onTap: () {
+                                  setState(() => selectedFilter = 0);
+                                },
+                                child: Container(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                    vertical: 12,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: selectedFilter == 0
+                                        ? Colors.white
+                                        : Colors.grey.shade800,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    "Top Comment",
+                                    style: TextStyle(
+                                      color: selectedFilter == 0
+                                          ? Colors.black
+                                          : Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                 ),
-                              );
-                            },
-
-                            child: Container(
-                              width: 55,
-                              decoration: BoxDecoration(
-                                color: ep == selectedEpisode
-                                    ? Colors.white
-                                    : Colors.grey.shade800,
-                                borderRadius: BorderRadius.circular(12),
                               ),
-                              alignment: Alignment.center,
-                              child: Text(
-                                "$ep",
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  color: ep == selectedEpisode
-                                      ? Colors.black
-                                      : Colors.white,
-                                  fontWeight: FontWeight.bold,
+
+                              SizedBox(width: 12),
+
+                              GestureDetector(
+                                onTap: () {
+                                  setState(() => selectedFilter = 1);
+                                },
+                                child: Container(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                    vertical: 12,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: selectedFilter == 1
+                                        ? Colors.white
+                                        : Colors.grey.shade800,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    "Terbaru",
+                                    style: TextStyle(
+                                      color: selectedFilter == 1
+                                          ? Colors.black
+                                          : Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                                 ),
                               ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    // ===============================
-                    // DESKRIPSI
-                    // ===============================
-                    Text(
-                      widget.description,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Colors.white70,
-                        height: 1.6,
-                      ),
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    // ===============================
-                    // KOMENTAR WARNING
-                    // ===============================
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade900,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: RichText(
-                        text: const TextSpan(
-                          children: [
-                            TextSpan(
-                              text:
-                                  "Jangan lupa untuk membuat komentar yang sopan dan santun dan mengikuti ",
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: 13,
-                              ),
-                            ),
-                            TextSpan(
-                              text: "Aturan Komunitas",
-                              style: TextStyle(
-                                color: Colors.blueAccent,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    // ===============================
-                    // TITLE COMMENT
-                    // ===============================
-                    const Text(
-                      "1.7K Comments",
-                      style: TextStyle(
-                        fontSize: 20,
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    // ===============================
-                    // FILTER BUTTONS (TOP / NEWEST)
-                    // ===============================
-                    Row(
-                      children: [
-                        GestureDetector(
-                          onTap: () {
-                            setState(() => selectedFilter = 0);
-                          },
-                          child: Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 12,
-                            ),
-                            decoration: BoxDecoration(
-                              color: selectedFilter == 0
-                                  ? Colors.white
-                                  : Colors.grey.shade800,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              "Top Comment",
-                              style: TextStyle(
-                                color: selectedFilter == 0
-                                    ? Colors.black
-                                    : Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                            ],
                           ),
-                        ),
 
-                        SizedBox(width: 12),
+                          const SizedBox(height: 16),
 
-                        GestureDetector(
-                          onTap: () {
-                            setState(() => selectedFilter = 1);
-                          },
-                          child: Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 12,
-                            ),
-                            decoration: BoxDecoration(
-                              color: selectedFilter == 1
-                                  ? Colors.white
-                                  : Colors.grey.shade800,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              "Terbaru",
-                              style: TextStyle(
-                                color: selectedFilter == 1
-                                    ? Colors.black
-                                    : Colors.white,
-                                fontWeight: FontWeight.bold,
+                          // ===============================
+                          // INPUT COMMENT
+                          // ===============================
+                          Row(
+                            children: [
+                              // Avatar
+                              Container(
+                                width: 38,
+                                height: 38,
+                                decoration: const BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.blueAccent,
+                                ),
+                                child: const Icon(Icons.person, color: Colors.white),
                               ),
-                            ),
+
+                              const SizedBox(width: 10),
+
+                              // Input Text Field
+                              Expanded(
+                                child: TextField(
+                                  style: const TextStyle(color: Colors.white),
+                                  cursorColor: Colors.white,
+                                  decoration: InputDecoration(
+                                    filled: true,
+                                    fillColor: Colors.grey.shade800,
+                                    hintText: "Tambahkan komentar...",
+                                    hintStyle: const TextStyle(color: Colors.white54),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 12,
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(20),
+                                      borderSide: BorderSide.none,
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(20),
+                                      borderSide: BorderSide(color: Colors.white54),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                      ],
-                    ),
 
-                    const SizedBox(height: 16),
+                          const SizedBox(height: 20),
 
-                    // ===============================
-                    // INPUT COMMENT
-                    // ===============================
-                    Row(
-                      children: [
-                        // Avatar
-                        Container(
-                          width: 38,
-                          height: 38,
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.blueAccent,
+                          // ===============================
+                          // DAFTAR KOMENTAR
+                          // ===============================
+                          Column(
+                            children: [
+                              _buildComment(
+                                avatarUrl:
+                                    "https://i.pinimg.com/736x/bc/ef/13/bcef139d4eee78d2fae65e59c7798436.jpg",
+                                name: "Altantuya shalendra",
+                                time: "10 jam lalu",
+                                comment:
+                                    "Cerita yang menarik, karakter utamanya imut banget sumpah 😭🔥",
+                              ),
+                            ],
                           ),
-                          child: const Icon(Icons.person, color: Colors.white),
-                        ),
 
-                        const SizedBox(width: 10),
-
-                        // Input Text Field
-                        Expanded(
-                          child: TextField(
-                            style: const TextStyle(color: Colors.white),
-                            cursorColor: Colors.white,
-                            decoration: InputDecoration(
-                              filled: true,
-                              fillColor: Colors.grey.shade800,
-                              hintText: "Tambahkan komentar...",
-                              hintStyle: const TextStyle(color: Colors.white54),
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 12,
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(20),
-                                borderSide: BorderSide.none,
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(20),
-                                borderSide: BorderSide(color: Colors.white54),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+                          const SizedBox(height: 16),
+                        ],
+                      ),
                     ),
-
-                    const SizedBox(height: 20),
-
-                    // ===============================
-                    // DAFTAR KOMENTAR
-                    // ===============================
-                    Column(
-                      children: [
-                        _buildComment(
-                          avatarUrl:
-                              "https://i.pinimg.com/736x/bc/ef/13/bcef139d4eee78d2fae65e59c7798436.jpg",
-                          name: "Altantuya shalendra",
-                          time: "10 jam lalu",
-                          comment:
-                              "Cerita yang menarik, karakter utamanya imut banget sumpah 😭🔥",
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 16),
-                  ],
-                ),
-              ),
-            ),
-          ],
+                  ),
+              ],
+            );
+          },
         ),
       ),
     );

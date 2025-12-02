@@ -2,12 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:weebsoul/screens/splash_page.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  
+  // 🔥 FIREBASE (Sementara dimatikan)
+  // await Firebase.initializeApp();
+  // print("🔥 Firebase terhubung dengan sukses!");
 
-  print("🔥 Firebase terhubung dengan sukses!");
+  // ⚡ SUPABASE
+  await Supabase.initialize(
+    url: 'https://kbzjefqpsmzglyftloob.supabase.co',
+    anonKey: 'sb_publishable_Bid3dhfOIxG5WrhiSTvcLQ_tqIwrY57', 
+  );
+  print("⚡ Supabase terhubung!");
 
   runApp(const WeebsoulApp());
 }

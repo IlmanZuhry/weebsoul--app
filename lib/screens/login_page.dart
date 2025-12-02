@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:weebsoul/widgets/page_transition.dart';
 import 'package:weebsoul/screens/navigation_root.dart';
 import 'package:weebsoul/screens/register_page.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
@@ -125,11 +126,49 @@ class LoginPage extends StatelessWidget {
 
             // Tombol Login
             ElevatedButton(
-              onPressed: () {
-                Navigator.pushReplacement(
-                  context,
-                  FadeSlidePageRoute(page: const NavigationRoot()),
-                );
+              onPressed: () async {
+                final email = emailController.text.trim();
+                final password = passwordController.text.trim();
+
+                if (email.isEmpty || password.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Email dan Password harus diisi!")),
+                  );
+                  return;
+                }
+
+                try {
+                  // ⚡ SUPABASE SIGN IN
+                  await Supabase.instance.client.auth.signInWithPassword(
+                    email: email,
+                    password: password,
+                  );
+
+                  if (context.mounted) {
+                    Navigator.pushReplacement(
+                      context,
+                      FadeSlidePageRoute(page: const NavigationRoot()),
+                    );
+                  }
+                } on AuthException catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(e.message),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Terjadi kesalahan, coba lagi nanti."),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blueAccent,

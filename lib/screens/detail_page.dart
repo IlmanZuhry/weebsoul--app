@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/anime_info.dart';
 import 'package:weebsoul/screens/vidio_page.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class DetailPage extends StatelessWidget {
   final AnimeInfo anime;
@@ -163,14 +164,27 @@ class DetailPage extends StatelessWidget {
               itemBuilder: (context, index) {
                 return GestureDetector(
                   onTap: () {
+                    // 🔥 LOGIKA UNTUK VIDEO SPY X FAMILY EPISODE 1 (SUPABASE)
+                    String videoUrlToUse = "https://samplelib.com/lib/preview/mp4/sample-5s.mp4"; // Default Dummy
+
+                    // Cek jika ini adalah Spy x Family dan Episode 1
+                    if (anime.title.contains("Spy x Family") && anime.episodes[index] == "Episode 1") {
+                      // ⚡ AMBIL DARI SUPABASE STORAGE
+                      // Pastikan Anda sudah membuat bucket bernama 'Vidio_Anime' dan upload file 'spyeps1.mp4'
+                      final supabase = Supabase.instance.client;
+                      videoUrlToUse = supabase
+                          .storage
+                          .from('Vidio_Anime') // Nama bucket
+                          .getPublicUrl('spyeps1.mp4'); // Nama file yang diupload
+                    }
+
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (_) => VideoPlayerPage(
                           animeTitle: anime.title,
                           title: "${anime.title} - ${anime.episodes[index]}",
-                          videoUrl:
-                              "https://samplelib.com/lib/preview/mp4/sample-5s.mp4", // dummy video
+                          videoUrl: videoUrlToUse,
                           description: anime.description,
                           episodeCount: anime.episodes.length,
                           views: anime.views,
