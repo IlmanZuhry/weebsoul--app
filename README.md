@@ -175,8 +175,11 @@ File `.env` **TIDAK** ada di GitHub untuk keamanan.
 
 ## 👥 Tim Developer
 
-- **Ilman Zuhry** - Full Stack Developer
-
+- **Ilman Zuhry** 
+- **M.Rizky Pramadhana**
+- **Mahesa Penemuan Ali**
+- **Beprian Tulus**
+- **Andri Wiguna**
 ---
 
 ## 📝 License
