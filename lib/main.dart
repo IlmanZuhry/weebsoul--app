@@ -4,18 +4,22 @@ import 'package:weebsoul/screens/splash_page.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:weebsoul/screens/login_page.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // 🔐 Load environment variables
+  await dotenv.load(fileName: ".env");
   
   // 🔥 FIREBASE (Sementara dimatikan)
   // await Firebase.initializeApp();
   // print("🔥 Firebase terhubung dengan sukses!");
 
-  // ⚡ SUPABASE
+  // ⚡ SUPABASE (Load from environment variables)
   await Supabase.initialize(
-    url: 'https://kbzjefqpsmzglyftloob.supabase.co',
-    anonKey: 'sb_publishable_Bid3dhfOIxG5WrhiSTvcLQ_tqIwrY57', 
+    url: dotenv.env['SUPABASE_URL']!,
+    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
   print("⚡ Supabase terhubung!");
 

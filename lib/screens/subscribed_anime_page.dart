@@ -1,22 +1,54 @@
 import 'package:flutter/material.dart';
-import 'package:weebsoul/data/anime_data.dart';
 import 'package:weebsoul/models/anime_info.dart';
 import 'package:weebsoul/screens/detail_page.dart';
+import 'package:weebsoul/services/favorite_service.dart';
 
-class FavoritePage extends StatelessWidget {
+class FavoritePage extends StatefulWidget {
   const FavoritePage({super.key});
 
+  @override
+  State<FavoritePage> createState() => _FavoritePageState();
+}
+
+class _FavoritePageState extends State<FavoritePage> {
   final Color accentBlue = const Color(0xFF29B6F6);
+  List<AnimeInfo> favoriteList = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFavorites();
+  }
+
+  Future<void> _loadFavorites() async {
+    setState(() => isLoading = true);
+    
+    final favorites = await FavoriteService.getFavorites();
+    
+    // Convert favorites data to complete AnimeInfo objects
+    final animeList = favorites.map((fav) {
+      return AnimeInfo(
+        title: fav['anime_title'] ?? '',
+        imageUrl: fav['anime_image_url'] ?? '',
+        rating: (fav['anime_rating'] as num?)?.toDouble() ?? 0.0,
+        episode: fav['anime_episode'] ?? 'Favorited',
+        views: fav['anime_views'] ?? '0',
+        duration: fav['anime_duration'] ?? '0',
+        description: fav['anime_description'] ?? '',
+        genres: (fav['anime_genres'] as String?)?.split(',') ?? [],
+        episodes: (fav['anime_episodes'] as String?)?.split(',') ?? [],
+      );
+    }).toList();
+
+    setState(() {
+      favoriteList = animeList;
+      isLoading = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Menggabungkan beberapa data anime untuk simulasi Favorit
-    final List<AnimeInfo> favoriteList = [
-      ...mingguAnime,
-      ...seninAnime,
-      ...selasaAnime,
-    ];
-
     return Scaffold(
       backgroundColor: const Color(0xFF1E1E1E),
       body: SafeArea(
@@ -88,23 +120,62 @@ class FavoritePage extends StatelessWidget {
             ),
 
             // ==============================================
-            // GRID CONTENT (PERBAIKAN TAMPILAN)
+            // GRID CONTENT (DYNAMIC)
             // ==============================================
             Expanded(
-              child: GridView.builder(
-                padding: const EdgeInsets.all(16),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3, // 3 Kolom agar pas seperti di Home
-                  crossAxisSpacing: 12, // Jarak antar kolom
-                  mainAxisSpacing: 16, // Jarak antar baris
-                  childAspectRatio:
-                      0.65, // 🔥 FIX: Rasio ini membuat kartu proporsional (tidak gepeng/panjang)
-                ),
-                itemCount: favoriteList.length,
-                itemBuilder: (context, index) {
-                  return _buildFavoriteCard(context, favoriteList[index]);
-                },
-              ),
+              child: isLoading
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        color: Colors.blueAccent,
+                      ),
+                    )
+                  : favoriteList.isEmpty
+                      ? Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(32.0),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.favorite_border,
+                                  size: 80,
+                                  color: Colors.grey.shade700,
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  "Belum ada favorit",
+                                  style: TextStyle(
+                                    color: Colors.grey.shade600,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  "Tambahkan anime favorit Anda\ndari halaman detail",
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: Colors.grey.shade700,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                      : GridView.builder(
+                          padding: const EdgeInsets.all(16),
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 3,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 16,
+                            childAspectRatio: 0.65,
+                          ),
+                          itemCount: favoriteList.length,
+                          itemBuilder: (context, index) {
+                            return _buildFavoriteCard(context, favoriteList[index]);
+                          },
+                        ),
             ),
           ],
         ),
@@ -113,16 +184,18 @@ class FavoritePage extends StatelessWidget {
   }
 
   // ===============================================================
-  // KARTU ANIME (Desain diperbaiki)
+  // KARTU ANIME
   // ===============================================================
   Widget _buildFavoriteCard(BuildContext context, AnimeInfo anime) {
     return GestureDetector(
-      onTap: () {
+      onTap: () async {
         // Navigasi ke Detail Page saat diklik
-        Navigator.push(
+        await Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => DetailPage(anime: anime)),
         );
+        // Reload favorites setelah kembali (jika ada perubahan)
+        _loadFavorites();
       },
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -201,7 +274,7 @@ class FavoritePage extends StatelessWidget {
               color: Colors.white,
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              height: 1.2, // Jarak antar baris teks biar rapi
+              height: 1.2,
             ),
           ),
         ],

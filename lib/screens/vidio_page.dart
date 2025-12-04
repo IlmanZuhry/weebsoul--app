@@ -3,6 +3,7 @@ import 'package:chewie/chewie.dart';
 import 'package:video_player/video_player.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:weebsoul/services/video_service.dart';
+import 'package:weebsoul/services/comment_service.dart';
 
 class VideoPlayerPage extends StatefulWidget {
   final String animeTitle;
@@ -33,6 +34,11 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
   late VideoPlayerController _videoController;
   ChewieController? _chewieController;
 
+  // Comments state
+  List<Map<String, dynamic>> comments = [];
+  bool isLoadingComments = true;
+  final TextEditingController _commentController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
@@ -50,12 +56,43 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
         );
         setState(() {});
       });
+
+    // Load comments
+    _loadComments();
+  }
+
+  Future<void> _loadComments() async {
+    setState(() => isLoadingComments = true);
+    final fetchedComments = await CommentService.getComments(
+      widget.animeTitle,
+      selectedEpisode,
+    );
+    setState(() {
+      comments = fetchedComments;
+      isLoadingComments = false;
+    });
+  }
+
+  Future<void> _submitComment() async {
+    if (_commentController.text.trim().isEmpty) return;
+
+    final success = await CommentService.addComment(
+      animeTitle: widget.animeTitle,
+      episodeNumber: selectedEpisode,
+      commentText: _commentController.text.trim(),
+    );
+
+    if (success) {
+      _commentController.clear();
+      _loadComments(); // Reload comments
+    }
   }
 
   @override
   void dispose() {
     _videoController.dispose();
     _chewieController?.dispose();
+    _commentController.dispose();
     super.dispose();
   }
 
@@ -281,7 +318,7 @@ SizedBox(
                           // TITLE COMMENT
                           // ===============================
                           const Text(
-                            "1.7K Comments",
+                            "Komentar",
                             style: TextStyle(
                               fontSize: 20,
                               color: Colors.white,
@@ -378,6 +415,7 @@ SizedBox(
                               // Input Text Field
                               Expanded(
                                 child: TextField(
+                                  controller: _commentController,
                                   style: const TextStyle(color: Colors.white),
                                   cursorColor: Colors.white,
                                   decoration: InputDecoration(
@@ -397,7 +435,12 @@ SizedBox(
                                       borderRadius: BorderRadius.circular(20),
                                       borderSide: BorderSide(color: Colors.white54),
                                     ),
+                                    suffixIcon: IconButton(
+                                      icon: const Icon(Icons.send, color: Colors.blueAccent),
+                                      onPressed: _submitComment,
+                                    ),
                                   ),
+                                  onSubmitted: (_) => _submitComment(),
                                 ),
                               ),
                             ],
@@ -406,20 +449,56 @@ SizedBox(
                           const SizedBox(height: 20),
 
                           // ===============================
-                          // DAFTAR KOMENTAR
+                          // DAFTAR KOMENTAR (DYNAMIC)
                           // ===============================
-                          Column(
-                            children: [
-                              _buildComment(
-                                avatarUrl:
-                                    "https://i.pinimg.com/736x/bc/ef/13/bcef139d4eee78d2fae65e59c7798436.jpg",
-                                name: "Altantuya shalendra",
-                                time: "10 jam lalu",
-                                comment:
-                                    "Cerita yang menarik, karakter utamanya imut banget sumpah 😭🔥",
-                              ),
-                            ],
-                          ),
+                          isLoadingComments
+                              ? const Center(
+                                  child: CircularProgressIndicator(
+                                    color: Colors.blueAccent,
+                                  ),
+                                )
+                              : comments.isEmpty
+                                  ? Center(
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(32.0),
+                                        child: Column(
+                                          children: [
+                                            Icon(
+                                              Icons.comment_outlined,
+                                              size: 64,
+                                              color: Colors.grey.shade700,
+                                            ),
+                                            const SizedBox(height: 16),
+                                            Text(
+                                              "Belum ada komentar",
+                                              style: TextStyle(
+                                                color: Colors.grey.shade600,
+                                                fontSize: 16,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Text(
+                                              "Jadilah yang pertama berkomentar!",
+                                              style: TextStyle(
+                                                color: Colors.grey.shade700,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    )
+                                  : Column(
+                                      children: comments.map((comment) {
+                                        return _buildComment(
+                                          avatarUrl: comment['user_avatar'] ?? 
+                                              'https://ui-avatars.com/api/?name=${comment['user_name']}&background=random',
+                                          name: comment['user_name'] ?? 'Anonymous',
+                                          time: _formatTime(comment['created_at']),
+                                          comment: comment['comment_text'] ?? '',
+                                        );
+                                      }).toList(),
+                                    ),
 
                           const SizedBox(height: 16),
                         ],
@@ -432,6 +511,30 @@ SizedBox(
         ),
       ),
     );
+  }
+
+  String _formatTime(String? timestamp) {
+    if (timestamp == null) return 'Baru saja';
+    
+    try {
+      final dateTime = DateTime.parse(timestamp);
+      final now = DateTime.now();
+      final difference = now.difference(dateTime);
+
+      if (difference.inMinutes < 1) {
+        return 'Baru saja';
+      } else if (difference.inMinutes < 60) {
+        return '${difference.inMinutes} menit lalu';
+      } else if (difference.inHours < 24) {
+        return '${difference.inHours} jam lalu';
+      } else if (difference.inDays < 7) {
+        return '${difference.inDays} hari lalu';
+      } else {
+        return '${(difference.inDays / 7).floor()} minggu lalu';
+      }
+    } catch (e) {
+      return 'Baru saja';
+    }
   }
 
   Widget _buildInfoButton(IconData icon, String label) {

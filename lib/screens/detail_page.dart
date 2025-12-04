@@ -3,11 +3,71 @@ import '../models/anime_info.dart';
 import 'package:weebsoul/screens/vidio_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:weebsoul/services/video_service.dart';
+import 'package:weebsoul/services/favorite_service.dart';
 
-class DetailPage extends StatelessWidget {
+class DetailPage extends StatefulWidget {
   final AnimeInfo anime;
 
   const DetailPage({super.key, required this.anime});
+
+  @override
+  State<DetailPage> createState() => _DetailPageState();
+}
+
+class _DetailPageState extends State<DetailPage> {
+  bool isFavorited = false;
+  bool isLoadingFavorite = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkFavoriteStatus();
+  }
+
+  Future<void> _checkFavoriteStatus() async {
+    final favorited = await FavoriteService.isFavorite(widget.anime.title);
+    setState(() {
+      isFavorited = favorited;
+      isLoadingFavorite = false;
+    });
+  }
+
+  Future<void> _toggleFavorite() async {
+    if (isLoadingFavorite) return;
+
+    setState(() => isLoadingFavorite = true);
+
+    bool success;
+    if (isFavorited) {
+      success = await FavoriteService.removeFavorite(widget.anime.title);
+    } else {
+      success = await FavoriteService.addFavorite(widget.anime);
+    }
+
+    if (success) {
+      setState(() {
+        isFavorited = !isFavorited;
+        isLoadingFavorite = false;
+      });
+
+      // Show feedback
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              isFavorited 
+                  ? '✅ Ditambahkan ke favorit' 
+                  : '❌ Dihapus dari favorit',
+            ),
+            duration: const Duration(seconds: 2),
+            backgroundColor: isFavorited ? Colors.green : Colors.red,
+          ),
+        );
+      }
+    } else {
+      setState(() => isLoadingFavorite = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +95,7 @@ class DetailPage extends StatelessWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      anime.title,
+                      widget.anime.title,
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 22,
@@ -53,12 +113,12 @@ class DetailPage extends StatelessWidget {
             // 🔥 POSTER VERTIKAL (rasio 1:2)
             Center(
               child: SizedBox(
-                width: 200, // << ubah 200 → 180 jika ingin lebih kecil
+                width: 200,
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(16),
                   child: AspectRatio(
-                    aspectRatio: 3 / 4, // rasio vertikal
-                    child: Image.network(anime.imageUrl, fit: BoxFit.cover),
+                    aspectRatio: 3 / 4,
+                    child: Image.network(widget.anime.imageUrl, fit: BoxFit.cover),
                   ),
                 ),
               ),
@@ -66,30 +126,42 @@ class DetailPage extends StatelessWidget {
 
             const SizedBox(height: 18),
 
-            // 🔥 FAVORITE BUTTON
+            // 🔥 FAVORITE BUTTON (DYNAMIC)
             Center(
               child: SizedBox(
                 width: 170,
                 height: 42,
                 child: ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(
-                      0xFF8B2E2E,
-                    ), // merah maroon seperti contoh
+                    backgroundColor: isFavorited 
+                        ? Colors.red.shade700 
+                        : const Color(0xFF8B2E2E),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                  icon: const Icon(Icons.video_library, color: Colors.white),
-                  label: const Text(
-                    "Add Favorite",
-                    style: TextStyle(
+                  icon: isLoadingFavorite
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Icon(
+                          isFavorited ? Icons.favorite : Icons.favorite_border,
+                          color: Colors.white,
+                        ),
+                  label: Text(
+                    isFavorited ? "Favorited" : "Add Favorite",
+                    style: const TextStyle(
                       fontSize: 16,
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  onPressed: () {},
+                  onPressed: _toggleFavorite,
                 ),
               ),
             ),
@@ -101,7 +173,7 @@ class DetailPage extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Wrap(
                 spacing: 8,
-                children: anime.genres
+                children: widget.anime.genres
                     .map(
                       (g) => Container(
                         padding: const EdgeInsets.symmetric(
@@ -131,7 +203,7 @@ class DetailPage extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Text(
-                anime.description,
+                widget.anime.description,
                 style: TextStyle(
                   color: Colors.white.withOpacity(0.85),
                   fontSize: 14,
@@ -161,7 +233,7 @@ class DetailPage extends StatelessWidget {
             ListView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              itemCount: anime.episodes.length,
+              itemCount: widget.anime.episodes.length,
               itemBuilder: (context, index) {
                 
                 return GestureDetector(
@@ -169,12 +241,12 @@ class DetailPage extends StatelessWidget {
                     // ⚡ AMBIL VIDEO URL DARI DATABASE
                     // Extract episode number from string (e.g., "Episode 1" -> 1)
                     final episodeNumber = int.tryParse(
-                      anime.episodes[index].replaceAll(RegExp(r'[^0-9]'), '')
+                      widget.anime.episodes[index].replaceAll(RegExp(r'[^0-9]'), '')
                     ) ?? 0;
 
                     // Fetch video URL from database
                     final videoUrl = await VideoService.getVideoUrl(
-                      anime.title,
+                      widget.anime.title,
                       episodeNumber,
                     );
 
@@ -183,12 +255,12 @@ class DetailPage extends StatelessWidget {
                         context,
                         MaterialPageRoute(
                           builder: (_) => VideoPlayerPage(
-                            animeTitle: anime.title,
-                            title: "${anime.title} - ${anime.episodes[index]}",
+                            animeTitle: widget.anime.title,
+                            title: "${widget.anime.title} - ${widget.anime.episodes[index]}",
                             videoUrl: videoUrl, // ⚡ Use fetched URL
-                            description: anime.description,
-                            episodeCount: anime.episodes.length,
-                            views: anime.views,
+                            description: widget.anime.description,
+                            episodeCount: widget.anime.episodes.length,
+                            views: widget.anime.views,
                           ),
                         ),
                       );
@@ -212,7 +284,7 @@ class DetailPage extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            anime.episodes[index],
+                            widget.anime.episodes[index],
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 15,
