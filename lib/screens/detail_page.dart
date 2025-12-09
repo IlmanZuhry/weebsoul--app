@@ -261,6 +261,7 @@ class _DetailPageState extends State<DetailPage> {
                             description: widget.anime.description,
                             episodeCount: widget.anime.episodes.length,
                             views: widget.anime.views,
+                            imageUrl: widget.anime.imageUrl,
                           ),
                         ),
                       );

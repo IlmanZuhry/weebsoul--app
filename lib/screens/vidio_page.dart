@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:chewie/chewie.dart';
 import 'package:video_player/video_player.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:weebsoul/services/video_service.dart';
 import 'package:weebsoul/services/comment_service.dart';
+import 'package:weebsoul/services/watch_history_service.dart';
+import 'dart:async';
 
 class VideoPlayerPage extends StatefulWidget {
   final String animeTitle;
@@ -12,6 +13,7 @@ class VideoPlayerPage extends StatefulWidget {
   final String description;
   final int episodeCount;
   final String views;
+  final String imageUrl;
 
   const VideoPlayerPage({
     super.key,
@@ -21,6 +23,7 @@ class VideoPlayerPage extends StatefulWidget {
     required this.description,
     required this.episodeCount,
     required this.views,
+    required this.imageUrl,
   });
 
   @override
@@ -39,6 +42,10 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
   bool isLoadingComments = true;
   final TextEditingController _commentController = TextEditingController();
 
+  // Watch history tracking
+  Timer? _progressTimer;
+  String? _currentImageUrl;
+
   @override
   void initState() {
     super.initState();
@@ -46,6 +53,9 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
     // Ambil nomor episode dari title: "Episode 7"
     final parts = widget.title.split("Episode ");
     selectedEpisode = int.tryParse(parts.last) ?? 1;
+
+    // Set image URL for watch history
+    _currentImageUrl = widget.imageUrl;
 
     _videoController = VideoPlayerController.network(widget.videoUrl)
       ..initialize().then((_) {
@@ -55,6 +65,9 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
           looping: false,
         );
         setState(() {});
+        
+        // Start tracking watch history
+        _startWatchHistoryTracking();
       });
 
     // Load comments
@@ -88,8 +101,52 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
     }
   }
 
+  void _startWatchHistoryTracking() {
+    // Save initial watch history
+    _saveWatchHistory();
+
+    // Update progress every 10 seconds
+    _progressTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
+      if (_videoController.value.isInitialized && _videoController.value.isPlaying) {
+        _updateProgress();
+      }
+    });
+  }
+
+  Future<void> _saveWatchHistory() async {
+    if (!_videoController.value.isInitialized) return;
+
+    final watchedDuration = _videoController.value.position.inSeconds;
+    final totalDuration = _videoController.value.duration.inSeconds;
+
+    await WatchHistoryService.saveWatchHistory(
+      animeTitle: widget.animeTitle,
+      episodeNumber: selectedEpisode,
+      watchedDuration: watchedDuration,
+      totalDuration: totalDuration,
+      imageUrl: _currentImageUrl ?? '',
+      episodeLabel: "Episode $selectedEpisode",
+    );
+  }
+
+  Future<void> _updateProgress() async {
+    if (!_videoController.value.isInitialized) return;
+
+    final watchedDuration = _videoController.value.position.inSeconds;
+
+    await WatchHistoryService.updateProgress(
+      animeTitle: widget.animeTitle,
+      episodeNumber: selectedEpisode,
+      watchedDuration: watchedDuration,
+    );
+  }
+
   @override
   void dispose() {
+    // Save final progress before disposing
+    _updateProgress();
+    
+    _progressTimer?.cancel();
     _videoController.dispose();
     _chewieController?.dispose();
     _commentController.dispose();
@@ -234,6 +291,7 @@ SizedBox(
                 description: widget.description,
                 episodeCount: widget.episodeCount,
                 views: widget.views,
+                imageUrl: widget.imageUrl,
               ),
             ),
           );

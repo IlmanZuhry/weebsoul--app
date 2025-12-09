@@ -1,12 +1,40 @@
 import 'package:flutter/material.dart';
-import 'package:weebsoul/data/anime_data.dart'; // Import Data
-import 'package:weebsoul/models/anime_info.dart'; // Import Model
+import 'package:weebsoul/services/watch_history_service.dart';
 
-class RiwayatPage extends StatelessWidget {
+class RiwayatPage extends StatefulWidget {
   const RiwayatPage({super.key});
 
+  @override
+  State<RiwayatPage> createState() => _RiwayatPageState();
+}
+
+class _RiwayatPageState extends State<RiwayatPage> {
   // ⭐ Warna Biru Kustom
   final Color accentBlue = const Color(0xFF29B6F6);
+
+  Map<String, List<Map<String, dynamic>>> groupedHistory = {
+    'Baru Saja': [],
+    'Minggu Ini': [],
+    'Bulan Lalu': [],
+  };
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadWatchHistory();
+  }
+
+  Future<void> _loadWatchHistory() async {
+    setState(() => isLoading = true);
+    
+    final history = await WatchHistoryService.getWatchHistoryGrouped();
+    
+    setState(() {
+      groupedHistory = history;
+      isLoading = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -85,43 +113,92 @@ class RiwayatPage extends StatelessWidget {
             ),
 
             // ==============================================
-            // ISI LIST (DINAMIS DARI DATA)
+            // ISI LIST (DINAMIS DARI DATABASE)
             // ==============================================
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 20),
-
-                    // SECTION 1: Terakhir Ditonton (Dari List lastWatched)
-                    if (lastWatched.isNotEmpty)
-                      _buildHistorySection(
-                        date: "Baru Saja",
-                        animeList: lastWatched,
+              child: isLoading
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        color: Color(0xFF29B6F6),
                       ),
+                    )
+                  : _buildHistoryContent(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-                    // SECTION 2: Minggu Ini (Dari List ongoingAnime)
-                    // Kita ambil 3 item pertama saja sebagai contoh
-                    if (ongoingAnime.isNotEmpty)
-                      _buildHistorySection(
-                        date: "Minggu Ini",
-                        animeList: ongoingAnime.take(3).toList(),
-                      ),
+  Widget _buildHistoryContent() {
+    // Check if there's any history
+    final hasHistory = groupedHistory.values.any((list) => list.isNotEmpty);
 
-                    // SECTION 3: Bulan Lalu (Dari List completedAnime)
-                    if (completedAnime.isNotEmpty)
-                      _buildHistorySection(
-                        date: "Bulan Lalu",
-                        animeList: completedAnime.take(3).toList(),
-                      ),
-
-                    const SizedBox(height: 80),
-                  ],
-                ),
+    if (!hasHistory) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.history,
+              size: 80,
+              color: Colors.grey.shade700,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              "Belum ada riwayat tontonan",
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
               ),
             ),
+            const SizedBox(height: 8),
+            Text(
+              "Mulai menonton anime untuk melihat riwayat",
+              style: TextStyle(
+                color: Colors.grey.shade700,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadWatchHistory,
+      color: accentBlue,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 20),
+
+            // SECTION 1: Baru Saja
+            if (groupedHistory['Baru Saja']!.isNotEmpty)
+              _buildHistorySection(
+                date: "Baru Saja",
+                historyList: groupedHistory['Baru Saja']!,
+              ),
+
+            // SECTION 2: Minggu Ini
+            if (groupedHistory['Minggu Ini']!.isNotEmpty)
+              _buildHistorySection(
+                date: "Minggu Ini",
+                historyList: groupedHistory['Minggu Ini']!,
+              ),
+
+            // SECTION 3: Bulan Lalu
+            if (groupedHistory['Bulan Lalu']!.isNotEmpty)
+              _buildHistorySection(
+                date: "Bulan Lalu",
+                historyList: groupedHistory['Bulan Lalu']!,
+              ),
+
+            const SizedBox(height: 80),
           ],
         ),
       ),
@@ -133,28 +210,39 @@ class RiwayatPage extends StatelessWidget {
   // ======================================================
   Widget _buildHistorySection({
     required String date,
-    required List<AnimeInfo> animeList,
+    required List<Map<String, dynamic>> historyList,
   }) {
     return HistoryDateSection(
       date: date,
       accentColor: accentBlue,
-      children: animeList.map((anime) {
-        // Simulasi progress karena di data belum ada field 'progress'
-        // (Di aplikasi asli, ini diambil dari database local)
-        double randomProgress = (anime.title.length % 10) / 10 + 0.1;
-        if (randomProgress > 1.0) randomProgress = 0.9;
+      children: historyList.map((history) {
+        // Calculate progress
+        final watchedDuration = history['watched_duration'] ?? 0;
+        final totalDuration = history['total_duration'] ?? 1;
+        final progress = (watchedDuration / totalDuration).clamp(0.0, 1.0);
+
+        // Format time
+        final watchedTime = _formatDuration(watchedDuration);
+        final totalTime = _formatDuration(totalDuration);
 
         return HistoryItem(
-          img: anime.imageUrl,
-          title: anime.title,
-          episode: anime.episode,
-          watchedTime: "12:30", // Placeholder
-          totalTime: anime.duration,
-          progress: randomProgress,
+          img: history['image_url'] ?? '',
+          title: history['anime_title'] ?? 'Unknown',
+          episode: history['anime_episode_label'] ?? 'Episode ${history['episode_number']}',
+          watchedTime: watchedTime,
+          totalTime: totalTime,
+          progress: progress,
           accentColor: accentBlue,
         );
       }).toList(),
     );
+  }
+
+  String _formatDuration(int seconds) {
+    final duration = Duration(seconds: seconds);
+    final minutes = duration.inMinutes;
+    final secs = duration.inSeconds % 60;
+    return '${minutes.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
   }
 }
 
@@ -251,20 +339,27 @@ class HistoryItem extends StatelessWidget {
           // Thumbnail
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
-            child: Image.network(
-              img,
-              width: 90,
-              height: 90,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return Container(
-                  width: 90,
-                  height: 90,
-                  color: Colors.grey[800],
-                  child: const Icon(Icons.broken_image, color: Colors.white54),
-                );
-              },
-            ),
+            child: img.isNotEmpty
+                ? Image.network(
+                    img,
+                    width: 90,
+                    height: 90,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        width: 90,
+                        height: 90,
+                        color: Colors.grey[800],
+                        child: const Icon(Icons.broken_image, color: Colors.white54),
+                      );
+                    },
+                  )
+                : Container(
+                    width: 90,
+                    height: 90,
+                    color: Colors.grey[800],
+                    child: const Icon(Icons.movie, color: Colors.white54),
+                  ),
           ),
           const SizedBox(width: 15),
 
