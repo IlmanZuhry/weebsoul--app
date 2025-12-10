@@ -21,6 +21,9 @@ class _HomePageState extends State<HomePage> {
   // ⚡ Data user dari Supabase
   String userName = "User";
 
+  // 🔥 DATA TERAKHIR DITONTON
+  Map<String, dynamic>? _lastWatched; 
+
   final List<String> banners = [
     "https://awsimages.detik.net.id/community/media/visual/2025/03/09/one-punch-man-season-3-1741505097754.jpeg?w=700&q=90",
     "https://www.nme.com/wp-content/uploads/2025/04/Dandadan-season-2-main.jpg",
@@ -48,6 +51,7 @@ class _HomePageState extends State<HomePage> {
     _pageController = PageController(initialPage: initialPage);
     currentBanner = initialPage % banners.length;
     _loadUserData(); // ⚡ Load user data
+    fetchLastWatched(); // 🔥 Ambil data terakhir ditonton
   }
 
   // ⚡ Ambil username dari Supabase
@@ -60,11 +64,166 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  // ============================================================
+// 🔥 FETCH DATA TERAKHIR DITONTON DARI SUPABASE (KODE BARU)
+// ============================================================
+Future<void> fetchLastWatched() async {
+  final supabase = Supabase.instance.client;
+  final user = supabase.auth.currentUser;
+  if (user == null) return;
+
+  final response = await supabase
+      .from('watch_history')
+      .select()
+      .eq('user_id', user.id)
+      .order('last_watched_at', ascending: false)
+      .limit(1)
+      .maybeSingle();
+
+
+  if (response != null) {
+
+    final String? animeTitle = response['anime_title'];
+    
+    final allAnime = [...ongoingAnime, ...completedAnime]; 
+
+  
+    AnimeInfo? foundAnime;
+    try {
+      foundAnime = allAnime.firstWhere(
+          
+          (anime) => anime.title.trim() == animeTitle?.trim(),
+          orElse: () => throw Exception("Anime not found locally"),
+      );
+    } catch (e) {
+     
+      print("Warning: Local anime not found for title: $animeTitle. Error: $e");
+    }
+
+    // 4. Tambahkan rating ke map 'response'
+    if (foundAnime != null) {
+    
+      response['rating'] = foundAnime.rating.toString(); 
+    } else {
+  
+      response['rating'] = 'N/A'; 
+    }
+  }
+
+
+  if (mounted) {
+    setState(() {
+      
+      _lastWatched = response;
+    });
+  }
+}
+
   @override
   void dispose() {
     _pageController.dispose();
     super.dispose();
   }
+
+
+  //  WIDGET LIST ITEM TERAKHIR DITONTON (BARU)
+  
+  Widget _lastWatchedListItem(Map<String, dynamic> data) {
+    // Ambil rating dari data atau berikan nilai default jika tidak ada
+    // Dianggap data['rating'] tersedia
+    String rating = data['rating']?.toString() ?? 'N/A';
+    
+    return GestureDetector(
+      onTap: () {
+        
+      },
+      child: Padding(
+        padding: const EdgeInsets.only(top: 10, bottom: 20),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Gambar dan Rating
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    data['image_url'],
+                    width: 90,
+                    height: 120,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                Positioned(
+                  top: 5,
+                  left: 5,
+                  child: ratingBadge(rating), 
+                ),
+              ],
+            ),
+            const SizedBox(width: 15),
+            
+            // Detail Teks
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 15),
+                  Text(
+                    data['anime_title'],
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    data['anime_episode_label'],
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.7),
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    "On Going", 
+                    style: TextStyle(
+                      color: Colors.green[300],
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Tombol Play
+            const SizedBox(width: 15),
+            Padding(
+              padding: const EdgeInsets.only(top: 15),
+              child: GestureDetector(
+                onTap: () {
+                  
+                },
+                child: const Icon(
+                  Icons.play_circle_fill,
+                  color: Colors.white,
+                  size: 30,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+
+  // WIDGET KARTU TERAKHIR DITONTON 
+  
 
   @override
   Widget build(BuildContext context) {
@@ -135,8 +294,6 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
 
-                const SizedBox(height: 20),
-
                 // BANNER + GRADIENT + RATING
                 SizedBox(
                   height: 260,
@@ -157,9 +314,9 @@ class _HomePageState extends State<HomePage> {
                               begin: Alignment.topCenter,
                               end: Alignment.bottomCenter,
                               colors: [
-                                Colors.black.withValues(alpha: 0.80),
-                                Colors.black.withValues(alpha: 0.20),
-                                Colors.black.withValues(alpha: 0.85),
+                                Colors.black.withOpacity(0.80),
+                                Colors.black.withOpacity(0.20),
+                                Colors.black.withOpacity(0.85),
                               ],
                             ),
                           ),
@@ -205,12 +362,12 @@ class _HomePageState extends State<HomePage> {
                                     borderRadius: BorderRadius.circular(16),
                                     child: Stack(
                                       fit: StackFit
-                                          .expand, // 🔥 INI YANG PERBAIKI BUG
+                                          .expand, 
                                       children: [
                                         Image.network(
                                           banners[realIndex],
                                           fit: BoxFit
-                                              .cover, // 🔥 WAJIB supaya gambar tetap persegi panjang
+                                              .cover, 
                                         ),
 
                                         Positioned(
@@ -271,21 +428,25 @@ class _HomePageState extends State<HomePage> {
 
                 const SizedBox(height: 25),
 
-                // ================= TERAKHIR DITONTON =================
-                const Text(
-                  "Terakhir Ditonton",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+               
+                //TAMPILAN  TERAKHIR DITONTON (LIST ITEM)
+               
+                if (_lastWatched != null) ...[
+                  
+                  const Padding(
+                    padding: EdgeInsets.only(top: 20),
+                    child: Text(
+                      "Terakhir Ditonton",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
-                ),
-
-                const SizedBox(height: 10),
-
-                lastWatchedCard(lastWatched[0]),
-
-                const SizedBox(height: 25),
+                
+                  _lastWatchedListItem(_lastWatched!),
+                ],
 
                 // ================= ONGOING =================
                 GestureDetector(
@@ -309,14 +470,14 @@ class _HomePageState extends State<HomePage> {
                       Icon(Icons.arrow_forward, color: Colors.white),
                     ],
                   ),
-                ),            
+                ),       
                 const SizedBox(height: 10),
 
                 GridView.builder(
                   itemCount: ongoingAnime.length >= 3 ? 3 : ongoingAnime.length,
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 3,
                     crossAxisSpacing: 12,
                     mainAxisSpacing: 12,
@@ -347,7 +508,7 @@ class _HomePageState extends State<HomePage> {
                       : completedAnime.length,
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 3,
                     crossAxisSpacing: 12,
                     mainAxisSpacing: 12,
@@ -401,7 +562,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   // ======================================================
-  // ⭐ UNIVERSAL BADGE WIDGET (bisa dipakai di mana saja)
+  // NIVERSAL BADGE WIDGET (bisa dipakai di mana saja)
   Widget ratingBadge(String rating) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -466,164 +627,6 @@ class _HomePageState extends State<HomePage> {
                 fontWeight: FontWeight.w600,
               ),
               maxLines: 2,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ======================================================
-  Widget lastWatchedCard(AnimeInfo anime) {
-    return GestureDetector(
-      onTap: () {
-        showDialog(
-          context: context,
-          builder: (context) {
-            return AlertDialog(
-              backgroundColor: const Color(0xFF2A2A2A),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(15),
-              ),
-              title: const Text(
-                "Lanjutkan menonton?",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    anime.title,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    anime.episode,
-                    style: const TextStyle(color: Colors.white70, fontSize: 14),
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text(
-                    "Batal",
-                    style: TextStyle(color: Colors.redAccent),
-                  ),
-                ),
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context); // tutup dialog
-
-                    // buka halaman detail
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => DetailPage(anime: anime),
-                      ),
-                    );
-                  },
-                  child: const Text(
-                    "Lanjutkan",
-                    style: TextStyle(color: Colors.greenAccent),
-                  ),
-                ),
-              ],
-            );
-          },
-        );
-      },
-
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Stack(
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.network(
-                  anime.imageUrl,
-                  width: 90,
-                  height: 120,
-                  fit: BoxFit.cover,
-                ),
-              ),
-
-              Positioned(
-                top: 6,
-                right: 6,
-                child: ratingBadge(anime.rating.toString()),
-              ),
-            ],
-          ),
-
-          const SizedBox(width: 12),
-
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        anime.title,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-
-                    Container(
-                      width: 30,
-                      height: 30,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 1.6),
-                      ),
-                      child: const Icon(
-                        Icons.play_arrow,
-                        color: Colors.white,
-                        size: 16,
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 6),
-
-                Text(
-                  anime.episode, // episode terbaru
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.7),
-                    fontSize: 13,
-                  ),
-                ),
-
-                const SizedBox(height: 4),
-
-                Text(
-                  "On Going", // bisa kamu ganti kalau ada status asli
-                  style: const TextStyle(
-                    color: Colors.greenAccent,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
             ),
           ),
         ],
