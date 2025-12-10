@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:weebsoul/screens/edit_profile_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+// Pastikan import ini sesuai dengan lokasi file EditProfilePage kamu
+import 'package:weebsoul/screens/edit_profile_page.dart';
 
 class SettingPage extends StatefulWidget {
   const SettingPage({super.key});
-
 
   @override
   State<SettingPage> createState() => _SettingPageState();
@@ -31,11 +31,39 @@ class _SettingPageState extends State<SettingPage> {
   Future<void> _loadUserData() async {
     final user = Supabase.instance.client.auth.currentUser;
     if (user != null) {
-      setState(() {
-        userEmail = user.email ?? "No Email";
-        // Ambil username dari metadata
-        userName = user.userMetadata?['username'] ?? "User";
-      });
+      if (mounted) {
+        setState(() {
+          userEmail = user.email ?? "No Email";
+          // Ambil username dari metadata, default ke "User" jika null
+          userName = user.userMetadata?['username'] ?? "User";
+        });
+      }
+    }
+  }
+
+  // ⚡ Fungsi Logout Terpisah untuk menghindari bug
+  Future<void> _handleLogout() async {
+    try {
+      // 1. Tutup Dialog Konfirmasi terlebih dahulu
+      Navigator.of(context).pop();
+
+      // 2. Lakukan Logout Supabase
+      await Supabase.instance.client.auth.signOut();
+
+      // 3. Cek apakah widget masih aktif sebelum navigasi
+      if (mounted) {
+        // 4. Pindah ke halaman Login dan hapus semua history halaman sebelumnya
+        Navigator.of(
+          context,
+        ).pushNamedAndRemoveUntil('/login', (route) => false);
+      }
+    } catch (e) {
+      // Jika terjadi error (opsional: tampilkan snackbar)
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Gagal Logout: $e")));
+      }
     }
   }
 
@@ -65,7 +93,7 @@ class _SettingPageState extends State<SettingPage> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFF1E1E1E), // Match background
+                color: const Color(0xFF1E1E1E),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
@@ -80,13 +108,13 @@ class _SettingPageState extends State<SettingPage> {
                       image: const DecorationImage(
                         image: NetworkImage(
                           "https://cdn.dribbble.com/userupload/17507007/file/original-d70a169a94153ac2b0f60a8cccb59651.png?resize=400x0",
-                        ), // Ganti dengan aset lokal jika ada
+                        ),
                         fit: BoxFit.cover,
                       ),
                     ),
                   ),
                   const SizedBox(width: 16),
-                  // Info User (Tanpa Level)
+                  // Info User
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -114,7 +142,6 @@ class _SettingPageState extends State<SettingPage> {
 
             const SizedBox(height: 20),
 
-            // Di dalam Column -> children
             // ================= AKUN (Edit Profil) =================
             _buildSectionTitle("Akun"),
             _buildMenuTile(
@@ -125,14 +152,12 @@ class _SettingPageState extends State<SettingPage> {
                 size: 16,
               ),
               onTap: () async {
-                // Navigasi ke EditProfilePage
                 await Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) => const EditProfilePage(),
                   ),
                 );
-                // ⚡ Reload data setelah kembali dari edit profile
                 _loadUserData();
               },
             ),
@@ -182,7 +207,7 @@ class _SettingPageState extends State<SettingPage> {
 
             const SizedBox(height: 30),
 
-            // ================= LOGOUT =================
+            // ================= LOGOUT BUTTON =================
             SizedBox(
               width: double.infinity,
               height: 50,
@@ -194,10 +219,12 @@ class _SettingPageState extends State<SettingPage> {
                   ),
                 ),
                 onPressed: () {
-                  // ⚡ POPUP KONFIRMASI LOGOUT
+                  // ⚡ TAMPILKAN POPUP KONFIRMASI
                   showDialog(
                     context: context,
-                    builder: (BuildContext context) {
+                    // Barrier dismissible false agar user harus memilih opsi
+                    barrierDismissible: false,
+                    builder: (BuildContext dialogContext) {
                       return AlertDialog(
                         backgroundColor: const Color(0xFF2C2C2C),
                         shape: RoundedRectangleBorder(
@@ -212,14 +239,16 @@ class _SettingPageState extends State<SettingPage> {
                         ),
                         content: Text(
                           "Apakah Anda yakin ingin keluar dari akun?",
-                          style: GoogleFonts.poppins(
-                            color: Colors.white70,
-                          ),
+                          style: GoogleFonts.poppins(color: Colors.white70),
                         ),
                         actions: [
                           // Tombol Batal
                           TextButton(
-                            onPressed: () => Navigator.pop(context),
+                            onPressed: () {
+                              Navigator.of(
+                                dialogContext,
+                              ).pop(); // Tutup dialog saja
+                            },
                             child: Text(
                               "Batal",
                               style: GoogleFonts.poppins(
@@ -228,32 +257,9 @@ class _SettingPageState extends State<SettingPage> {
                               ),
                             ),
                           ),
-                          // Tombol Logout
+                          // Tombol Logout (Panggil fungsi _handleLogout)
                           TextButton(
-                            onPressed: () async {
-                              Navigator.pop(context); // Tutup dialog
-                              
-                              // ⚡ SUPABASE LOGOUT
-                              try {
-                                await Supabase.instance.client.auth.signOut();
-                                if (context.mounted) {
-                                  // Navigate to login page and clear navigation stack
-                                  Navigator.of(context).pushNamedAndRemoveUntil(
-                                    '/login',
-                                    (route) => false,
-                                  );
-                                }
-                              } catch (e) {
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text("Gagal logout, coba lagi."),
-                                      backgroundColor: Colors.red,
-                                    ),
-                                  );
-                                }
-                              }
-                            },
+                            onPressed: _handleLogout,
                             child: Text(
                               "Logout",
                               style: GoogleFonts.poppins(
@@ -299,7 +305,7 @@ class _SettingPageState extends State<SettingPage> {
     );
   }
 
-  // WIDGET HELPER: Menu Biasa (Container Rounded)
+  // WIDGET HELPER: Menu Biasa
   Widget _buildMenuTile({
     required String title,
     required Widget trailing,
@@ -310,7 +316,7 @@ class _SettingPageState extends State<SettingPage> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         decoration: BoxDecoration(
-          color: const Color(0xFF2C2C2C), // Warna card abu gelap
+          color: const Color(0xFF2C2C2C),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Row(
@@ -359,7 +365,7 @@ class _SettingPageState extends State<SettingPage> {
     );
   }
 
-  // WIDGET HELPER: Info Text (Kanan Kiri)
+  // WIDGET HELPER: Info Text
   Widget _buildInfoTile(String title, String value) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -389,7 +395,7 @@ class _SettingPageState extends State<SettingPage> {
     );
   }
 
-  // WIDGET HELPER: Tombol Kecil (Privacy/Terms)
+  // WIDGET HELPER: Tombol Kecil
   Widget _buildSmallButton(String text) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 14),
