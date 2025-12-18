@@ -1,10 +1,37 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// Service untuk mengelola komentar dari Supabase Database
 class CommentService {
   static final _supabase = Supabase.instance.client;
 
-  /// Get comments untuk anime & episode tertentu
+  static Stream<List<Map<String, dynamic>>> streamComments(
+    String animeTitle,
+    int episodeNumber,
+  ) {
+    return _supabase
+        .from('comments')
+        .stream(primaryKey: ['id'])
+        .order('created_at', ascending: false)
+        .map((maps) => maps
+            .where((m) =>
+                m['anime_title'] == animeTitle &&
+                m['episode_number'] == episodeNumber)
+            .toList());
+  }
+
+  static Stream<int> streamCommentCount(
+    String animeTitle,
+    int episodeNumber,
+  ) {
+    return _supabase
+        .from('comments')
+        .stream(primaryKey: ['id'])
+        .map((maps) => maps
+            .where((m) =>
+                m['anime_title'] == animeTitle &&
+                m['episode_number'] == episodeNumber)
+            .length);
+  }
+
   static Future<List<Map<String, dynamic>>> getComments(
     String animeTitle,
     int episodeNumber,
@@ -24,7 +51,6 @@ class CommentService {
     }
   }
 
-  /// Add new comment
   static Future<bool> addComment({
     required String animeTitle,
     required int episodeNumber,
@@ -56,7 +82,6 @@ class CommentService {
     }
   }
 
-  /// Delete comment (user can only delete their own)
   static Future<bool> deleteComment(String commentId) async {
     try {
       await _supabase

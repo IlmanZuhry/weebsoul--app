@@ -4,6 +4,7 @@ import 'package:video_player/video_player.dart';
 import 'package:weebsoul/services/video_service.dart';
 import 'package:weebsoul/services/comment_service.dart';
 import 'package:weebsoul/services/watch_history_service.dart';
+import 'package:weebsoul/services/like_service.dart';
 import 'dart:async';
 
 class VideoPlayerPage extends StatefulWidget {
@@ -48,8 +49,9 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
   Timer? _progressTimer;
   String? _currentImageUrl;
 
-  // ⭐ RESUME
   int _resumePosition = 0;
+  
+  bool isUserLiked = false;
 
   @override
   void initState() {
@@ -60,25 +62,40 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
 
     _currentImageUrl = widget.imageUrl;
 
-    _initVideoWithResume(); // ✅ GANTI BARIS INI
+    _initVideoWithResume();
     _loadComments();
+    _checkInitialLikeStatus();
+  }
+
+  Future<void> _checkInitialLikeStatus() async {
+    final status = await LikeService.isLiked(
+      animeTitle: widget.animeTitle,
+      episodeNumber: selectedEpisode,
+    );
+    if (mounted) {
+      setState(() => isUserLiked = status);
+    }
+  }
+
+  Future<void> _handleLikeToggle() async {
+    setState(() => isUserLiked = !isUserLiked);
+    await LikeService.toggleLike(
+      animeTitle: widget.animeTitle,
+      episodeNumber: selectedEpisode,
+    );
   }
 
   Future<void> _initVideoWithResume() async {
-    await _loadResumePosition(); // ✅ tunggu dulu
-
-    await _initVideo(); // baru init video
+    await _loadResumePosition();
+    await _initVideo();
   }
 
-  // ================= RESUME =================
   Future<void> _loadResumePosition() async {
-    // 1️⃣ prioritas dari Home (Lanjutkan Menonton)
     if (widget.startAtSeconds > 0) {
       _resumePosition = widget.startAtSeconds;
       return;
     }
 
-    // 2️⃣ fallback dari database
     final data = await WatchHistoryService.getProgress(
       animeTitle: widget.animeTitle,
       episodeNumber: selectedEpisode,
@@ -96,7 +113,6 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
     try {
       await _videoController.seekTo(Duration(seconds: _resumePosition));
     } catch (_) {
-      // biarin, biar ga crash
     }
   }
 
@@ -139,7 +155,6 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
     }
   }
 
-  // ================= COMMENTS =================
   Future<void> _loadComments() async {
     setState(() => isLoadingComments = true);
     final fetchedComments = await CommentService.getComments(
@@ -167,7 +182,6 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
     }
   }
 
-  // ================= WATCH HISTORY =================
   void _startWatchHistoryTracking() {
     _saveWatchHistory();
 
@@ -205,7 +219,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
   @override
   void dispose() {
     if (_videoController.value.isInitialized) {
-      _updateProgress(); // ✅ JANGAN KIRIM PARAMETER
+      _updateProgress(); 
     }
 
     _progressTimer?.cancel();
@@ -234,9 +248,6 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ===============================
-                // VIDEO PLAYER
-                // ===============================
                 isLandscape
                     ? Expanded(
                         child: Center(
@@ -262,7 +273,6 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
                               ),
                       ),
 
-                // Jika LANDSCAPE, sembunyikan detail di bawahnya
                 if (!isLandscape)
                   Expanded(
                     child: SingleChildScrollView(
@@ -270,8 +280,6 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Judul Video
-                          // ⭐ Judul Video (lebih besar)
                           Text(
                             "${widget.animeTitle} - Episode $selectedEpisode",
                             style: const TextStyle(
@@ -284,7 +292,6 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
 
                           const SizedBox(height: 6),
 
-                          // ⭐ Subtitle kecil (Episode, views, tanggal)
                           Row(
                             children: [
                               Text(
@@ -312,12 +319,27 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
 
                           const SizedBox(height: 16),
 
-                          // Like, comment, quality
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              _buildInfoButton(Icons.thumb_up, "3.4K"),
-                              _buildInfoButton(Icons.message, "14"),
+                              StreamBuilder<int>(
+                                stream: LikeService.streamLikeCount(
+                                  animeTitle: widget.animeTitle,
+                                  episodeNumber: selectedEpisode,
+                                ),
+                                builder: (context, snapshot) {
+                                  final count = snapshot.data ?? 0;
+                                  return GestureDetector(
+                                    onTap: _handleLikeToggle,
+                                    child: _buildInfoButton(
+                                      isUserLiked ? Icons.thumb_up : Icons.thumb_up_outlined, 
+                                      count.toString(),
+                                      color: isUserLiked ? Colors.blueAccent : Colors.white,
+                                    ),
+                                  );
+                                }
+                              ),
+                              _buildInfoButton(Icons.message, comments.length.toString()),
                               _buildInfoButton(Icons.hd, "360p"),
                               _buildInfoButton(Icons.download, "Download"),
                             ],
@@ -325,9 +347,6 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
 
                           const SizedBox(height: 20),
 
-                          // ===============================
-                          // EPISODE LIST
-                          // ===============================
                           const Text(
                             "Episode List",
                             style: TextStyle(
@@ -370,8 +389,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
                                           episodeCount: widget.episodeCount,
                                           views: widget.views,
                                           imageUrl: widget.imageUrl,
-                                          episodeNumber:
-                                              ep, // ✅ TAMBAHKAN INI (Menggunakan variabel 'ep' yang sudah ada)
+                                          episodeNumber: ep,
                                         ),
                                       ),
                                     );
@@ -403,9 +421,6 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
 
                           const SizedBox(height: 20),
 
-                          // ===============================
-                          // DESKRIPSI
-                          // ===============================
                           Text(
                             widget.description,
                             style: const TextStyle(
@@ -417,9 +432,6 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
 
                           const SizedBox(height: 20),
 
-                          // ===============================
-                          // KOMENTAR WARNING
-                          // ===============================
                           Container(
                             width: double.infinity,
                             padding: const EdgeInsets.all(12),
@@ -452,9 +464,6 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
 
                           const SizedBox(height: 20),
 
-                          // ===============================
-                          // TITLE COMMENT
-                          // ===============================
                           const Text(
                             "Komentar",
                             style: TextStyle(
@@ -466,9 +475,6 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
 
                           const SizedBox(height: 12),
 
-                          // ===============================
-                          // FILTER BUTTONS (TOP / NEWEST)
-                          // ===============================
                           Row(
                             children: [
                               GestureDetector(
@@ -476,7 +482,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
                                   setState(() => selectedFilter = 0);
                                 },
                                 child: Container(
-                                  padding: EdgeInsets.symmetric(
+                                  padding: const EdgeInsets.symmetric(
                                     horizontal: 20,
                                     vertical: 12,
                                   ),
@@ -498,14 +504,14 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
                                 ),
                               ),
 
-                              SizedBox(width: 12),
+                              const SizedBox(width: 12),
 
                               GestureDetector(
                                 onTap: () {
                                   setState(() => selectedFilter = 1);
                                 },
                                 child: Container(
-                                  padding: EdgeInsets.symmetric(
+                                  padding: const EdgeInsets.symmetric(
                                     horizontal: 20,
                                     vertical: 12,
                                   ),
@@ -531,12 +537,8 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
 
                           const SizedBox(height: 16),
 
-                          // ===============================
-                          // INPUT COMMENT
-                          // ===============================
                           Row(
                             children: [
-                              // Avatar
                               Container(
                                 width: 38,
                                 height: 38,
@@ -552,7 +554,6 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
 
                               const SizedBox(width: 10),
 
-                              // Input Text Field
                               Expanded(
                                 child: TextField(
                                   controller: _commentController,
@@ -575,7 +576,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
                                     ),
                                     focusedBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(20),
-                                      borderSide: BorderSide(
+                                      borderSide: const BorderSide(
                                         color: Colors.white54,
                                       ),
                                     ),
@@ -595,9 +596,6 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
 
                           const SizedBox(height: 20),
 
-                          // ===============================
-                          // DAFTAR KOMENTAR (DYNAMIC)
-                          // ===============================
                           isLoadingComments
                               ? const Center(
                                   child: CircularProgressIndicator(
@@ -685,10 +683,10 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
     }
   }
 
-  Widget _buildInfoButton(IconData icon, String label) {
+  Widget _buildInfoButton(IconData icon, String label, {Color color = Colors.white}) {
     return Row(
       children: [
-        Icon(icon, color: Colors.white, size: 22),
+        Icon(icon, color: color, size: 22),
         const SizedBox(width: 6),
         Text(label, style: const TextStyle(color: Colors.white)),
       ],
@@ -706,17 +704,14 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Avatar
           CircleAvatar(radius: 22, backgroundImage: NetworkImage(avatarUrl)),
 
           const SizedBox(width: 12),
 
-          // Right side
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Name + time
                 Row(
                   children: [
                     Text(
@@ -739,14 +734,13 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
 
                 const SizedBox(height: 6),
 
-                // Comment text
                 Text(
                   comment,
                   style: const TextStyle(color: Colors.white, fontSize: 14),
                 ),
-                SizedBox(height: 10),
+                const SizedBox(height: 10),
 
-                Row(
+                const Row(
                   children: [
                     Icon(
                       Icons.thumb_up_outlined,
