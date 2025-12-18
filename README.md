@@ -1,207 +1,193 @@
 # 🎬 Weebsoul - Anime Streaming App
 
-Aplikasi streaming anime berbasis Flutter dengan fitur komentar dan favorit yang terintegrasi dengan Supabase.
+## 📱 Nama Aplikasi
 
----
+Weebsoul - Anime Streaming App
 
-## � Tentang Aplikasi
+## 👥 Tim Pengembang
 
-**Weebsoul** adalah aplikasi mobile untuk menonton anime dengan fitur-fitur modern seperti sistem komentar real-time, daftar favorit personal, dan jadwal tayang anime berdasarkan hari.
+- Ilman Zuhry Hartarto (241712047)
+- M.Rizky Pramadhana (241712056)
+- Andri Wiguna (241712062)
+- Mahesa Penemuan Ali (241712064)
+- Beprian Tulus (241712065)
 
-### ✨ Fitur Utama
 
-#### 🔐 User Authentication
-- **Register** - Daftar akun baru dengan email & password
-- **Login** - Masuk ke akun Anda
-- **Profile** - Kelola profil user (nama, bio, foto)
+## 📝 Deskripsi Singkat Aplikasi
 
-#### 🎥 Streaming & Video Player
-- **Watch Anime** - Streaming anime langsung dari cloud storage
-- **Episode Management** - Pilih episode yang ingin ditonton
-- **Video Controls** - Play, pause, seek, fullscreen
-- **Auto Quality** - Streaming adaptif sesuai koneksi
+Weebsoul adalah aplikasi streaming anime berbasis Flutter yang menyediakan pengalaman menonton anime yang seamless dan modern. Aplikasi ini dilengkapi dengan fitur-fitur seperti jadwal rilis anime, riwayat tontonan, favorit, komentar episode, sistem like, dan profil pengguna yang dapat dikustomisasi. Weebsoul menggunakan Supabase sebagai backend untuk autentikasi, database, dan storage.
 
-#### 💬 Sistem Komentar
-- **Komentar per Episode** - Diskusi untuk setiap episode
-- **Real-time Comments** - Komentar muncul langsung
-- **User Identity** - Setiap komentar menampilkan nama & avatar user
-- **Timestamp** - Waktu relatif komentar (2 jam lalu, 1 hari lalu)
+## ✨ Daftar Fitur pada Aplikasi
 
-#### ❤️ Sistem Favorit
-- **Add to Favorites** - Simpan anime favorit Anda
-- **Personal Collection** - Setiap user punya daftar favorit sendiri
-- **Quick Access** - Akses cepat ke anime favorit dari halaman Favorit
-- **Toggle Favorite** - Tambah/hapus favorit dengan satu klik
+- Login & Register dengan Supabase Auth
+- Persistent Login (otomatis login saat buka aplikasi)
+- Edit Profile (username, phone, bio, foto profil)
+- Video Player dengan kontrol lengkap
+- Jadwal rilis anime berdasarkan hari
+- Ongoing Anime dan Subscribed Anime
+- Detail Anime lengkap (sinopsis, rating, genre)
+- Riwayat Tontonan dengan progress tracking
+- Favorit Dinamis (tambah/hapus anime favorit)
+- Komentar Episode
+- Like System pada video
+- Splash Screen
 
-#### 📅 Jadwal Tayang
-- **Schedule by Day** - Lihat anime yang tayang per hari (Minggu - Sabtu)
-- **Browse by Genre** - Filter anime berdasarkan genre
-- **Anime Details** - Informasi lengkap (rating, deskripsi, genre)
+## 🛠️ Stack Technology yang Digunakan
 
----
+- Flutter SDK ^3.9.2
+- Dart ^3.9.2
+- Supabase ^2.10.3
 
-## 📖 Cara Pakai Aplikasi (Sebagai User)
+## 📦 Library / Framework yang Digunakan
 
-### 1️⃣ **Pertama Kali Membuka Aplikasi**
+- flutter (SDK)
+- google_fonts ^6.1.0
+- chewie ^1.7.0
+- video_player ^2.10.1
+- cupertino_icons ^1.0.8
+- supabase_flutter ^2.10.3
+- flutter_dotenv ^6.0.0
+- flutter_launcher_icons ^0.13.1
+- flutter_native_splash ^2.3.10
+- flutter_lints ^5.0.0
 
-1. **Register Akun:**
-   - Buka aplikasi
-   - Klik "Register"
-   - Isi email, password, nama
-   - Klik "Register"
+## 🔌 Public / Private API yang Digunakan
 
-2. **Login:**
-   - Masukkan email & password
-   - Klik "Login"
+Aplikasi ini menggunakan Supabase sebagai backend dengan fitur:
+- Supabase Auth (Email/Password Authentication)
+- Supabase Database (PostgreSQL)
+- Supabase Storage (untuk foto vidio)
 
-### 2️⃣ **Menonton Anime**
+Environment Variables yang digunakan:
+- SUPABASE_URL
+- SUPABASE_ANON_KEY
 
-1. **Pilih Anime:**
-   - Browse dari halaman Home atau Schedule
-   - Klik card anime yang ingin ditonton
 
-2. **Pilih Episode:**
-   - Di halaman detail, scroll ke bawah
-   - Klik episode yang ingin ditonton
+## 🚀 Cara Menjalankan Aplikasi
 
-3. **Tonton:**
-   - Video player akan terbuka
-   - Gunakan controls untuk play/pause/seek
-   - Klik fullscreen untuk layar penuh
-
-### 3️⃣ **Menambah Favorit**
-
-1. **Buka Detail Anime:**
-   - Klik anime yang ingin difavoritkan
-
-2. **Klik Tombol Favorit:**
-   - Klik "Add Favorite" (icon ❤️)
-   - Tombol berubah jadi "Favorited" (merah)
-
-3. **Lihat Favorit:**
-   - Buka tab "Favorit" di bottom navigation
-   - Semua anime favorit Anda ada di sini
-
-### 4️⃣ **Berkomentar**
-
-1. **Buka Video Player:**
-   - Pilih episode yang ingin ditonton
-
-2. **Scroll ke Bagian Komentar:**
-   - Di bawah video player ada section "Komentar"
-
-3. **Tulis Komentar:**
-   - Ketik komentar di input field
-   - Klik icon send (✈️) atau tekan Enter
-   - Komentar langsung muncul!
-
----
-
-## 💻 Setup untuk Developer
-
-### Prerequisites
-- Flutter SDK (3.9.2+)
+### 📋 Prerequisites
+- Flutter SDK (versi 3.9.2 atau lebih tinggi)
+- Dart SDK (versi 3.9.2 atau lebih tinggi)
+- Android Studio / VS Code dengan Flutter extension
 - Git
-- Android Studio / VS Code
-- Akses Supabase credentials
 
-### Quick Start
+---
 
+## 👨‍💻 Untuk Developer (Setup Lengkap)
+
+Ikuti langkah-langkah ini jika Anda ingin setup Supabase sendiri dan develop aplikasi ini.
+
+### 1. Clone Repository
 ```bash
-# 1. Clone repository
 git clone https://github.com/IlmanZuhry/weebsoul--app.git
 cd weebsoul
+```
 
-# 2. Install dependencies
+### 2. Install Dependencies
+```bash
 flutter pub get
+```
 
-# 3. Buat file .env di root project
-# Isi dengan:
-SUPABASE_URL=your_supabase_url
-SUPABASE_ANON_KEY=your_supabase_anon_key
+### 3. Setup Supabase Project Baru
+1. Buat akun di https://supabase.com
+2. Buat project baru di Supabase Dashboard
+3. Catat SUPABASE_URL dan SUPABASE_ANON_KEY dari Settings → API
 
-# 4. Run aplikasi
+### 4. Setup Environment Variables
+Buat file `.env` di root project:
+```bash
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your-anon-key-here
+```
+
+**PENTING:** File `.env` sudah ada di `.gitignore`, jangan commit file ini!
+
+### 5. Setup Database
+Jalankan SQL berikut di Supabase SQL Editor untuk membuat tabel yang diperlukan:
+- Buka Supabase Dashboard → SQL Editor
+- Copy paste SQL schema dari developer documentation
+- Atau hubungi developer untuk mendapatkan SQL schema lengkap
+
+### 6. Setup Storage
+1. Buka Supabase Dashboard → Storage
+2. Buat bucket baru dengan nama `vidio`
+3. Set bucket menjadi Public
+4. Tambahkan policy untuk authenticated users
+
+### 7. Run Aplikasi
+```bash
+# Cek device yang tersedia
+flutter devices
+
+# Run di device yang terhubung
+flutter run
+
+# Run di device tertentu
+flutter run -d <device_id>
+```
+
+---
+
+## 👤 Untuk User (Menggunakan Server yang Sama)
+
+Ikuti langkah-langkah ini jika Anda ingin menjalankan aplikasi menggunakan server Supabase yang sudah ada.
+
+### 1. Clone Repository
+```bash
+git clone https://github.com/IlmanZuhry/weebsoul--app.git
+cd weebsoul
+```
+
+### 2. Install Dependencies
+```bash
+flutter pub get
+```
+
+### 3. Minta File .env dari Developer
+Hubungi developer (Ilman Zuhry) untuk mendapatkan file `.env` yang berisi kredensial Supabase.
+
+Setelah mendapatkan file `.env`, letakkan di root project (folder `weebsoul/`).
+
+**Struktur file .env:**
+```
+SUPABASE_URL=https://xxxxx.supabase.co
+SUPABASE_ANON_KEY=xxxxx
+```
+
+### 4. Run Aplikasi
+```bash
+# Cek device yang tersedia
+flutter devices
+
+# Run di device yang terhubung
 flutter run
 ```
 
-### Setup Database (Untuk Developer)
-
-Jalankan SQL scripts berikut di Supabase SQL Editor:
-
-1. `supabase_setup.sql` - Setup videos table
-2. `comments_setup.sql` - Setup comments table
-3. `favorites_setup.sql` - Setup favorites table
-4. `update_favorites_table.sql` - Update favorites dengan data lengkap
-
-### Struktur Project
-
-```
-lib/
-├── data/           # Data anime statis
-├── models/         # Data models
-├── screens/        # UI screens
-├── services/       # Backend services
-└── main.dart       # Entry point
-```
+**Catatan:** Dengan menggunakan file `.env` yang sama, Anda akan terhubung ke database yang sama dengan developer, sehingga data seperti akun, favorit, dan riwayat akan tersinkronisasi.
 
 ---
 
-## 🔐 Environment Variables
+## 🐛 Troubleshooting
 
-File `.env` **TIDAK** ada di GitHub untuk keamanan.
+### Error: "Error loading .env file"
+- Pastikan file `.env` ada di root project (folder `weebsoul/`)
+- Pastikan format `.env` benar (tidak ada spasi di sekitar tanda `=`)
+- Contoh yang benar: `SUPABASE_URL=https://xxx.supabase.co`
+- Contoh yang salah: `SUPABASE_URL = https://xxx.supabase.co`
 
-**Untuk menjalankan aplikasi:**
-1. Buat file `.env` di root project
-2. Isi dengan Supabase credentials
-3. Lihat `.env.example` untuk template
+### Error: "Supabase connection error"
+- Cek apakah `SUPABASE_URL` dan `SUPABASE_ANON_KEY` sudah benar
+- Pastikan tidak ada trailing slash di `SUPABASE_URL`
+- Pastikan koneksi internet aktif
 
----
+### Error: "Video tidak bisa diputar"
+- Pastikan tabel `videos` sudah dibuat di database
+- Pastikan `video_url` valid dan bisa diakses
+- Cek koneksi internet
 
-## 🛠️ Tech Stack
-
-- **Frontend:** Flutter & Dart
-- **Backend:** Supabase (Database + Auth + Storage)
-- **Video Player:** Chewie + Video Player
-- **State Management:** StatefulWidget
-- **Environment:** flutter_dotenv
-
----
-
-## � Screenshots
-
-> *Coming soon - tambahkan screenshot aplikasi di sini*
+### Error: "Flutter SDK not found"
+- Pastikan Flutter SDK sudah terinstall
+- Jalankan `flutter doctor` untuk cek instalasi
+- Tambahkan Flutter ke PATH environment variable
 
 ---
-
-## 👥 Tim Developer
-
-- **Ilman Zuhry** 
-- **M.Rizky Pramadhana**
-- **Mahesa Penemuan Ali**
-- **Beprian Tulus**
-- **Andri Wiguna**
----
-
-## 📝 License
-
-Private project - Educational purposes only.
-
----
-
-## 🆘 Troubleshooting
-
-**Q: Aplikasi crash saat startup?**  
-A: Pastikan file `.env` sudah dibuat dan diisi dengan credentials yang benar.
-
-**Q: Video tidak bisa diputar?**  
-A: Pastikan URL video sudah ada di Supabase Storage dan database.
-
-**Q: Komentar tidak muncul?**  
-A: Pastikan sudah login dan table `comments` sudah dibuat di Supabase.
-
-**Q: Favorit tidak tersimpan?**  
-A: Pastikan table `favorites` sudah dibuat dan RLS policies sudah aktif.
-
----
-
-**Happy Coding! 🚀**
