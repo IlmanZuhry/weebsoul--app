@@ -6,6 +6,9 @@ import 'package:weebsoul/models/anime_info.dart';
 import 'package:weebsoul/screens/detail_page.dart';
 import 'package:weebsoul/screens/ongoing_anime_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:weebsoul/screens/vidio_page.dart';
+import 'package:weebsoul/services/watch_history_service.dart';
+import 'package:weebsoul/services/video_service.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -15,6 +18,10 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  String _safeString(dynamic value) {
+    return value?.toString() ?? '';
+  }
+
   int currentBanner = 0;
   int currentBottomIndex = 0;
 
@@ -22,7 +29,7 @@ class _HomePageState extends State<HomePage> {
   String userName = "User";
 
   // 🔥 DATA TERAKHIR DITONTON
-  Map<String, dynamic>? _lastWatched; 
+  Map<String, dynamic>? _lastWatched;
 
   final List<String> banners = [
     "https://awsimages.detik.net.id/community/media/visual/2025/03/09/one-punch-man-season-3-1741505097754.jpeg?w=700&q=90",
@@ -65,59 +72,47 @@ class _HomePageState extends State<HomePage> {
   }
 
   // ============================================================
-// 🔥 FETCH DATA TERAKHIR DITONTON DARI SUPABASE (KODE BARU)
-// ============================================================
-Future<void> fetchLastWatched() async {
-  final supabase = Supabase.instance.client;
-  final user = supabase.auth.currentUser;
-  if (user == null) return;
+  // 🔥 FETCH DATA TERAKHIR DITONTON DARI SUPABASE (KODE BARU)
+  // ============================================================
+  Future<void> fetchLastWatched() async {
+    final supabase = Supabase.instance.client;
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
 
-  final response = await supabase
-      .from('watch_history')
-      .select()
-      .eq('user_id', user.id)
-      .order('last_watched_at', ascending: false)
-      .limit(1)
-      .maybeSingle();
+    final response = await supabase
+        .from('watch_history')
+        .select()
+        .eq('user_id', user.id)
+        .order('last_watched_at', ascending: false)
+        .limit(1)
+        .maybeSingle();
 
+    if (response != null) {
+      final String? animeTitle = response['anime_title'];
 
-  if (response != null) {
+      final allAnime = [...ongoingAnime, ...completedAnime];
 
-    final String? animeTitle = response['anime_title'];
-    
-    final allAnime = [...ongoingAnime, ...completedAnime]; 
+      AnimeInfo? foundAnime;
+      try {
+        foundAnime = allAnime.firstWhere(
+          (anime) =>
+              anime.title.trim().toLowerCase() ==
+              animeTitle?.trim().toLowerCase(),
+        );
+      } catch (_) {
+        foundAnime = null;
+      }
 
-  
-    AnimeInfo? foundAnime;
-    try {
-      foundAnime = allAnime.firstWhere(
-          
-          (anime) => anime.title.trim() == animeTitle?.trim(),
-          orElse: () => throw Exception("Anime not found locally"),
-      );
-    } catch (e) {
-     
-      print("Warning: Local anime not found for title: $animeTitle. Error: $e");
+      // 4. Tambahkan rating ke map 'response'
+      response['rating'] = foundAnime?.rating?.toString() ?? 'N/A';
     }
 
-    // 4. Tambahkan rating ke map 'response'
-    if (foundAnime != null) {
-    
-      response['rating'] = foundAnime.rating.toString(); 
-    } else {
-  
-      response['rating'] = 'N/A'; 
+    if (mounted) {
+      setState(() {
+        _lastWatched = response;
+      });
     }
   }
-
-
-  if (mounted) {
-    setState(() {
-      
-      _lastWatched = response;
-    });
-  }
-}
 
   @override
   void dispose() {
@@ -125,18 +120,112 @@ Future<void> fetchLastWatched() async {
     super.dispose();
   }
 
-
   //  WIDGET LIST ITEM TERAKHIR DITONTON (BARU)
-  
+
   Widget _lastWatchedListItem(Map<String, dynamic> data) {
     // Ambil rating dari data atau berikan nilai default jika tidak ada
     // Dianggap data['rating'] tersedia
     String rating = data['rating']?.toString() ?? 'N/A';
-    
+
     return GestureDetector(
       onTap: () {
-        
+        showDialog(
+          context: context,
+          builder: (_) => AlertDialog(
+            backgroundColor: const Color(0xFF2A2A2A),
+            title: const Text(
+              "Lanjutkan Menonton?",
+              style: TextStyle(color: Colors.white),
+            ),
+            content: Text(
+              "Episode ${data['episode_number']} • "
+              "${data['watched_duration']} / ${data['total_duration']} detik",
+              style: TextStyle(color: Colors.white70),
+            ),
+            actions: [
+              TextButton(
+                child: const Text(
+                  "Batalkan",
+                  style: TextStyle(color: Colors.white70),
+                ),
+                onPressed: () {
+                  // ❌ cuma tutup dialog
+                  Navigator.pop(context);
+                },
+              ),
+
+              ElevatedButton(
+                child: const Text("Lanjutkan"),
+                onPressed: () async {
+                  Navigator.pop(context);
+
+                  // 1. Ambil semua list anime (tambahkan list lain jika ada, misal mingguAnime)
+                  final allAnime = [
+                    ...ongoingAnime,
+                    ...completedAnime,
+                    ...mingguAnime,
+                  ];
+
+                  // 2. Cari data anime yang lengkap berdasarkan judul dari database
+                  AnimeInfo? foundAnime;
+                  try {
+                    foundAnime = allAnime.firstWhere(
+                      (anime) =>
+                          anime.title.trim().toLowerCase() ==
+                          data['anime_title']?.toString().toLowerCase().trim(),
+                    );
+                  } catch (_) {
+                    foundAnime = null;
+                  }
+
+                  // 3. Parsing angka episode dan durasi
+                  final int episodeNumber =
+                      int.tryParse(data['episode_number']?.toString() ?? '1') ??
+                      1;
+                  final int startAtSeconds =
+                      int.tryParse(
+                        data['watched_duration']?.toString() ?? '0',
+                      ) ??
+                      0;
+
+                  // 4. Ambil URL Video
+                  final videoUrl = await VideoService.getVideoUrl(
+                    data['anime_title'],
+                    episodeNumber,
+                  );
+
+                  if (!context.mounted) return;
+
+                  // 5. Kirim data LENGKAP ke VideoPlayerPage
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => VideoPlayerPage(
+                        animeTitle: data['anime_title'] ?? '',
+                        title:
+                            data['anime_episode_label'] ??
+                            'Episode $episodeNumber',
+                        videoUrl: videoUrl,
+                        startAtSeconds: startAtSeconds,
+                        // Ambil dari foundAnime, kalau tidak ketemu baru kasih string kosong
+                        description: foundAnime?.description ?? '',
+                        // Ambil jumlah episode asli, bukan cuma nomor episode sekarang
+                        episodeCount:
+                            foundAnime?.episodes.length ?? episodeNumber,
+                        views: foundAnime?.views ?? '0',
+                        imageUrl:
+                            data['image_url'] ?? foundAnime?.imageUrl ?? '',
+                        episodeNumber: episodeNumber,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        );
       },
+
       child: Padding(
         padding: const EdgeInsets.only(top: 10, bottom: 20),
         child: Row(
@@ -154,15 +243,11 @@ Future<void> fetchLastWatched() async {
                     fit: BoxFit.cover,
                   ),
                 ),
-                Positioned(
-                  top: 5,
-                  left: 5,
-                  child: ratingBadge(rating), 
-                ),
+                Positioned(top: 5, left: 5, child: ratingBadge(rating)),
               ],
             ),
             const SizedBox(width: 15),
-            
+
             // Detail Teks
             Expanded(
               child: Column(
@@ -189,7 +274,7 @@ Future<void> fetchLastWatched() async {
                   ),
                   const SizedBox(height: 5),
                   Text(
-                    "On Going", 
+                    "On Going",
                     style: TextStyle(
                       color: Colors.green[300],
                       fontSize: 14,
@@ -205,9 +290,7 @@ Future<void> fetchLastWatched() async {
             Padding(
               padding: const EdgeInsets.only(top: 15),
               child: GestureDetector(
-                onTap: () {
-                  
-                },
+                onTap: () {},
                 child: const Icon(
                   Icons.play_circle_fill,
                   color: Colors.white,
@@ -221,9 +304,7 @@ Future<void> fetchLastWatched() async {
     );
   }
 
-
-  // WIDGET KARTU TERAKHIR DITONTON 
-  
+  // WIDGET KARTU TERAKHIR DITONTON
 
   @override
   Widget build(BuildContext context) {
@@ -294,6 +375,8 @@ Future<void> fetchLastWatched() async {
                   ),
                 ),
 
+                const SizedBox(height: 25),
+
                 // BANNER + GRADIENT + RATING
                 SizedBox(
                   height: 260,
@@ -361,13 +444,11 @@ Future<void> fetchLastWatched() async {
                                   return ClipRRect(
                                     borderRadius: BorderRadius.circular(16),
                                     child: Stack(
-                                      fit: StackFit
-                                          .expand, 
+                                      fit: StackFit.expand,
                                       children: [
                                         Image.network(
                                           banners[realIndex],
-                                          fit: BoxFit
-                                              .cover, 
+                                          fit: BoxFit.cover,
                                         ),
 
                                         Positioned(
@@ -428,11 +509,8 @@ Future<void> fetchLastWatched() async {
 
                 const SizedBox(height: 25),
 
-               
                 //TAMPILAN  TERAKHIR DITONTON (LIST ITEM)
-               
                 if (_lastWatched != null) ...[
-                  
                   const Padding(
                     padding: EdgeInsets.only(top: 20),
                     child: Text(
@@ -444,7 +522,7 @@ Future<void> fetchLastWatched() async {
                       ),
                     ),
                   ),
-                
+
                   _lastWatchedListItem(_lastWatched!),
                 ],
 
@@ -453,7 +531,9 @@ Future<void> fetchLastWatched() async {
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const OngoingAnimePage()),
+                      MaterialPageRoute(
+                        builder: (context) => const OngoingAnimePage(),
+                      ),
                     );
                   },
                   child: Row(
@@ -470,7 +550,7 @@ Future<void> fetchLastWatched() async {
                       Icon(Icons.arrow_forward, color: Colors.white),
                     ],
                   ),
-                ),       
+                ),
                 const SizedBox(height: 10),
 
                 GridView.builder(
@@ -588,52 +668,6 @@ Future<void> fetchLastWatched() async {
   }
 
   // ======================================================
-  Widget animeCard({
-    required String title,
-    required String rating,
-    required String img,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Stack(
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: Image.network(
-                  img,
-                  width: 120,
-                  height: 150,
-                  fit: BoxFit.cover,
-                ),
-              ),
-
-              // ⭐ RATING
-              Positioned(top: 6, right: 6, child: ratingBadge(rating)),
-            ],
-          ),
-
-          const SizedBox(height: 6),
-
-          SizedBox(
-            width: 120,
-            child: Text(
-              title,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
-              maxLines: 2,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget animeGridItem(AnimeInfo anime) {
     return GestureDetector(
       onTap: () {
@@ -656,8 +690,6 @@ Future<void> fetchLastWatched() async {
                   fit: BoxFit.cover,
                 ),
               ),
-
-              // ⭐ RATING
               Positioned(
                 top: 6,
                 right: 6,
@@ -665,9 +697,7 @@ Future<void> fetchLastWatched() async {
               ),
             ],
           ),
-
           const SizedBox(height: 6),
-
           Text(
             anime.title,
             maxLines: 2,

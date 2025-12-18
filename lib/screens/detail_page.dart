@@ -55,8 +55,8 @@ class _DetailPageState extends State<DetailPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              isFavorited 
-                  ? '✅ Ditambahkan ke favorit' 
+              isFavorited
+                  ? '✅ Ditambahkan ke favorit'
                   : '❌ Dihapus dari favorit',
             ),
             duration: const Duration(seconds: 2),
@@ -118,7 +118,10 @@ class _DetailPageState extends State<DetailPage> {
                   borderRadius: BorderRadius.circular(16),
                   child: AspectRatio(
                     aspectRatio: 3 / 4,
-                    child: Image.network(widget.anime.imageUrl, fit: BoxFit.cover),
+                    child: Image.network(
+                      widget.anime.imageUrl,
+                      fit: BoxFit.cover,
+                    ),
                   ),
                 ),
               ),
@@ -133,8 +136,8 @@ class _DetailPageState extends State<DetailPage> {
                 height: 42,
                 child: ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: isFavorited 
-                        ? Colors.red.shade700 
+                    backgroundColor: isFavorited
+                        ? Colors.red.shade700
                         : const Color(0xFF8B2E2E),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
@@ -235,14 +238,18 @@ class _DetailPageState extends State<DetailPage> {
               physics: const NeverScrollableScrollPhysics(),
               itemCount: widget.anime.episodes.length,
               itemBuilder: (context, index) {
-                
                 return GestureDetector(
                   onTap: () async {
                     // ⚡ AMBIL VIDEO URL DARI DATABASE
                     // Extract episode number from string (e.g., "Episode 1" -> 1)
-                    final episodeNumber = int.tryParse(
-                      widget.anime.episodes[index].replaceAll(RegExp(r'[^0-9]'), '')
-                    ) ?? 0;
+                    final episodeNumber =
+                        int.tryParse(
+                          widget.anime.episodes[index].replaceAll(
+                            RegExp(r'[^0-9]'),
+                            '',
+                          ),
+                        ) ??
+                        0;
 
                     // Fetch video URL from database
                     final videoUrl = await VideoService.getVideoUrl(
@@ -256,12 +263,17 @@ class _DetailPageState extends State<DetailPage> {
                         MaterialPageRoute(
                           builder: (_) => VideoPlayerPage(
                             animeTitle: widget.anime.title,
-                            title: "${widget.anime.title} - ${widget.anime.episodes[index]}",
+                            title:
+                                "${widget.anime.title} - ${widget.anime.episodes[index]}",
+                            startAtSeconds: 0,
                             videoUrl: videoUrl, // ⚡ Use fetched URL
                             description: widget.anime.description,
                             episodeCount: widget.anime.episodes.length,
-                            views: widget.anime.views,
+                            views: widget.anime.views.toString(),
                             imageUrl: widget.anime.imageUrl,
+                            episodeNumber:
+                                index +
+                                1, // ✅ TAMBAHKAN INI (Asumsi index 0 adalah Eps 1)
                           ),
                         ),
                       );

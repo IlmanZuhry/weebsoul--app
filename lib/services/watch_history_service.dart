@@ -2,10 +2,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Service untuk mengelola riwayat tontonan dari Supabase Database
 class WatchHistoryService {
-  static final _supabase = Supabase.instance.client;
+  static final SupabaseClient _supabase = Supabase.instance.client;
 
-  /// Simpan atau update riwayat tontonan
-  static Future<bool> saveWatchHistory({
+  /// Simpan / update progress tontonan
+  static Future<bool> saveProgress({
     required String animeTitle,
     required int episodeNumber,
     required int watchedDuration,
@@ -15,15 +15,11 @@ class WatchHistoryService {
   }) async {
     try {
       final user = _supabase.auth.currentUser;
-      if (user == null) {
-        print('⚠️ User not logged in');
-        return false;
-      }
+      if (user == null) return false;
 
-      // Upsert: insert jika belum ada, update jika sudah ada
       await _supabase.from('watch_history').upsert({
         'user_id': user.id,
-        'anime_title': animeTitle,
+        'anime_title': animeTitle, // ✅ FIX FINAL
         'episode_number': episodeNumber,
         'watched_duration': watchedDuration,
         'total_duration': totalDuration,
@@ -32,10 +28,9 @@ class WatchHistoryService {
         'last_watched_at': DateTime.now().toIso8601String(),
       });
 
-      print('✅ Watch history saved: $animeTitle - Episode $episodeNumber');
       return true;
     } catch (e) {
-      print('❌ Error saving watch history: $e');
+      print('❌ saveProgress error: $e');
       return false;
     }
   }
@@ -62,19 +57,38 @@ class WatchHistoryService {
 
       return true;
     } catch (e) {
-      print('❌ Error updating progress: $e');
+      print('❌ updateProgress error: $e');
       return false;
     }
   }
 
-  /// Get semua riwayat tontonan user (sorted by last watched)
+  /// Get progress episode tertentu (UNTUK RESUME)
+  static Future<Map<String, dynamic>?> getProgress({
+    required String animeTitle,
+    required int episodeNumber,
+  }) async {
+    try {
+      final user = _supabase.auth.currentUser;
+      if (user == null) return null;
+
+      return await _supabase
+          .from('watch_history')
+          .select()
+          .eq('user_id', user.id)
+          .eq('anime_title', animeTitle)
+          .eq('episode_number', episodeNumber)
+          .maybeSingle();
+    } catch (e) {
+      print('❌ getProgress error: $e');
+      return null;
+    }
+  }
+
+  /// Get semua riwayat tontonan
   static Future<List<Map<String, dynamic>>> getWatchHistory() async {
     try {
       final user = _supabase.auth.currentUser;
-      if (user == null) {
-        print('⚠️ User not logged in');
-        return [];
-      }
+      if (user == null) return [];
 
       final response = await _supabase
           .from('watch_history')
@@ -84,12 +98,12 @@ class WatchHistoryService {
 
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
-      print('❌ Error fetching watch history: $e');
+      print('❌ getWatchHistory error: $e');
       return [];
     }
   }
 
-  /// Get riwayat tontonan yang dikelompokkan berdasarkan waktu
+  /// Get riwayat tontonan dikelompokkan (RIWAYAT PAGE)
   static Future<Map<String, List<Map<String, dynamic>>>> getWatchHistoryGrouped() async {
     try {
       final history = await getWatchHistory();
@@ -103,20 +117,20 @@ class WatchHistoryService {
 
       for (var item in history) {
         final lastWatched = DateTime.parse(item['last_watched_at']);
-        final difference = now.difference(lastWatched);
+        final diff = now.difference(lastWatched);
 
-        if (difference.inHours < 24) {
+        if (diff.inHours < 24) {
           grouped['Baru Saja']!.add(item);
-        } else if (difference.inDays < 7) {
+        } else if (diff.inDays < 7) {
           grouped['Minggu Ini']!.add(item);
-        } else if (difference.inDays < 30) {
+        } else if (diff.inDays < 30) {
           grouped['Bulan Lalu']!.add(item);
         }
       }
 
       return grouped;
     } catch (e) {
-      print('❌ Error grouping watch history: $e');
+      print('❌ getWatchHistoryGrouped error: $e');
       return {
         'Baru Saja': [],
         'Minggu Ini': [],
@@ -125,31 +139,7 @@ class WatchHistoryService {
     }
   }
 
-  /// Get progress untuk anime & episode tertentu
-  static Future<Map<String, dynamic>?> getProgress({
-    required String animeTitle,
-    required int episodeNumber,
-  }) async {
-    try {
-      final user = _supabase.auth.currentUser;
-      if (user == null) return null;
-
-      final response = await _supabase
-          .from('watch_history')
-          .select()
-          .eq('user_id', user.id)
-          .eq('anime_title', animeTitle)
-          .eq('episode_number', episodeNumber)
-          .maybeSingle();
-
-      return response;
-    } catch (e) {
-      print('❌ Error getting progress: $e');
-      return null;
-    }
-  }
-
-  /// Delete riwayat tontonan tertentu
+  /// Hapus riwayat tontonan
   static Future<bool> deleteWatchHistory({
     required String animeTitle,
     required int episodeNumber,
@@ -165,10 +155,9 @@ class WatchHistoryService {
           .eq('anime_title', animeTitle)
           .eq('episode_number', episodeNumber);
 
-      print('✅ Watch history deleted');
       return true;
     } catch (e) {
-      print('❌ Error deleting watch history: $e');
+      print('❌ deleteWatchHistory error: $e');
       return false;
     }
   }

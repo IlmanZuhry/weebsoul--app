@@ -9,7 +9,6 @@ class RiwayatPage extends StatefulWidget {
 }
 
 class _RiwayatPageState extends State<RiwayatPage> {
-  // ⭐ Warna Biru Kustom
   final Color accentBlue = const Color(0xFF29B6F6);
 
   Map<String, List<Map<String, dynamic>>> groupedHistory = {
@@ -17,6 +16,7 @@ class _RiwayatPageState extends State<RiwayatPage> {
     'Minggu Ini': [],
     'Bulan Lalu': [],
   };
+
   bool isLoading = true;
 
   @override
@@ -27,9 +27,9 @@ class _RiwayatPageState extends State<RiwayatPage> {
 
   Future<void> _loadWatchHistory() async {
     setState(() => isLoading = true);
-    
+
     final history = await WatchHistoryService.getWatchHistoryGrouped();
-    
+
     setState(() {
       groupedHistory = history;
       isLoading = false;
@@ -43,78 +43,7 @@ class _RiwayatPageState extends State<RiwayatPage> {
       body: SafeArea(
         child: Column(
           children: [
-            // ==============================================
-            // ⭐ HEADER AESTHETIC (TEMA BIRU)
-            // ==============================================
-            Container(
-              width: double.infinity,
-              height: 120,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Colors.lightBlueAccent.withOpacity(0.3),
-                    const Color(0xFF1E1E1E),
-                  ],
-                ),
-                borderRadius: const BorderRadius.only(
-                  bottomRight: Radius.circular(40),
-                ),
-              ),
-              child: Stack(
-                children: [
-                  Positioned(
-                    right: -20,
-                    top: -20,
-                    child: Icon(
-                      Icons.history,
-                      size: 140,
-                      color: Colors.white.withOpacity(0.05),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Text(
-                          "Daftar Aktivitas",
-                          style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: 14,
-                            letterSpacing: 1,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          "Riwayat Menonton",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 26,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 0.5,
-                            fontFamily: 'Roboto',
-                            shadows: [
-                              BoxShadow(
-                                color: accentBlue.withOpacity(0.5),
-                                blurRadius: 20,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // ==============================================
-            // ISI LIST (DINAMIS DARI DATABASE)
-            // ==============================================
+            _buildHeader(),
             Expanded(
               child: isLoading
                   ? const Center(
@@ -130,38 +59,75 @@ class _RiwayatPageState extends State<RiwayatPage> {
     );
   }
 
+  Widget _buildHeader() {
+    return Container(
+      width: double.infinity,
+      height: 120,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.lightBlueAccent.withOpacity(0.3),
+            const Color(0xFF1E1E1E),
+          ],
+        ),
+        borderRadius: const BorderRadius.only(
+          bottomRight: Radius.circular(40),
+        ),
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -20,
+            top: -20,
+            child: Icon(
+              Icons.history,
+              size: 140,
+              color: Colors.white.withOpacity(0.05),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text(
+                  "Daftar Aktivitas",
+                  style: TextStyle(color: Colors.white70, fontSize: 14),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  "Riwayat Menonton",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 26,
+                    fontWeight: FontWeight.w900,
+                    shadows: [
+                      BoxShadow(
+                        color: accentBlue.withOpacity(0.5),
+                        blurRadius: 20,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildHistoryContent() {
-    // Check if there's any history
-    final hasHistory = groupedHistory.values.any((list) => list.isNotEmpty);
+    final hasHistory = groupedHistory.values.any((e) => e.isNotEmpty);
 
     if (!hasHistory) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.history,
-              size: 80,
-              color: Colors.grey.shade700,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              "Belum ada riwayat tontonan",
-              style: TextStyle(
-                color: Colors.grey.shade600,
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              "Mulai menonton anime untuk melihat riwayat",
-              style: TextStyle(
-                color: Colors.grey.shade700,
-                fontSize: 14,
-              ),
-            ),
-          ],
+      return const Center(
+        child: Text(
+          "Belum ada riwayat tontonan",
+          style: TextStyle(color: Colors.grey),
         ),
       );
     }
@@ -173,31 +139,23 @@ class _RiwayatPageState extends State<RiwayatPage> {
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 20),
-
-            // SECTION 1: Baru Saja
             if (groupedHistory['Baru Saja']!.isNotEmpty)
               _buildHistorySection(
                 date: "Baru Saja",
                 historyList: groupedHistory['Baru Saja']!,
               ),
-
-            // SECTION 2: Minggu Ini
             if (groupedHistory['Minggu Ini']!.isNotEmpty)
               _buildHistorySection(
                 date: "Minggu Ini",
                 historyList: groupedHistory['Minggu Ini']!,
               ),
-
-            // SECTION 3: Bulan Lalu
             if (groupedHistory['Bulan Lalu']!.isNotEmpty)
               _buildHistorySection(
                 date: "Bulan Lalu",
                 historyList: groupedHistory['Bulan Lalu']!,
               ),
-
             const SizedBox(height: 80),
           ],
         ),
@@ -205,9 +163,6 @@ class _RiwayatPageState extends State<RiwayatPage> {
     );
   }
 
-  // ======================================================
-  // FUNGSI BUILDER UNTUK GROUP HISTORY
-  // ======================================================
   Widget _buildHistorySection({
     required String date,
     required List<Map<String, dynamic>> historyList,
@@ -216,21 +171,20 @@ class _RiwayatPageState extends State<RiwayatPage> {
       date: date,
       accentColor: accentBlue,
       children: historyList.map((history) {
-        // Calculate progress
-        final watchedDuration = history['watched_duration'] ?? 0;
-        final totalDuration = history['total_duration'] ?? 1;
-        final progress = (watchedDuration / totalDuration).clamp(0.0, 1.0);
+        final watched = _toInt(history['watched_duration']);
+        final total = _toInt(history['total_duration'], fallback: 1);
 
-        // Format time
-        final watchedTime = _formatDuration(watchedDuration);
-        final totalTime = _formatDuration(totalDuration);
+        final progress =
+            total <= 0 ? 0.0 : (watched / total).clamp(0.0, 1.0);
 
         return HistoryItem(
-          img: history['image_url'] ?? '',
-          title: history['anime_title'] ?? 'Unknown',
-          episode: history['anime_episode_label'] ?? 'Episode ${history['episode_number']}',
-          watchedTime: watchedTime,
-          totalTime: totalTime,
+          img: (history['image_url'] ?? '').toString(),
+          title: (history['anime_title'] ?? 'Unknown').toString(),
+          episode: (history['anime_episode_label'] ??
+                  'Episode ${history['episode_number'] ?? '-'}')
+              .toString(),
+          watchedTime: _formatDuration(watched),
+          totalTime: _formatDuration(total),
           progress: progress,
           accentColor: accentBlue,
         );
@@ -238,17 +192,20 @@ class _RiwayatPageState extends State<RiwayatPage> {
     );
   }
 
+  int _toInt(dynamic value, {int fallback = 0}) {
+    if (value == null) return fallback;
+    if (value is int) return value;
+    if (value is String) return int.tryParse(value) ?? fallback;
+    return fallback;
+  }
+
   String _formatDuration(int seconds) {
-    final duration = Duration(seconds: seconds);
-    final minutes = duration.inMinutes;
-    final secs = duration.inSeconds % 60;
-    return '${minutes.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
+    final d = Duration(seconds: seconds);
+    return '${d.inMinutes.toString().padLeft(2, '0')}:${(d.inSeconds % 60).toString().padLeft(2, '0')}';
   }
 }
 
-// ======================================================
-// WIDGET PENDUKUNG (TIDAK BERUBAH)
-// ======================================================
+/* ===== WIDGET PENDUKUNG ===== */
 
 class HistoryDateSection extends StatelessWidget {
   final String date;
@@ -267,37 +224,13 @@ class HistoryDateSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Container(
-              height: 18,
-              width: 4,
-              decoration: BoxDecoration(
-                color: accentColor,
-                borderRadius: BorderRadius.circular(2),
-                boxShadow: [
-                  BoxShadow(
-                    color: accentColor.withOpacity(0.6),
-                    blurRadius: 6,
-                    spreadRadius: 1,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              date,
-              style: const TextStyle(
+        Text(date,
+            style: const TextStyle(
                 color: Colors.white,
                 fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
+                fontWeight: FontWeight.bold)),
         const SizedBox(height: 15),
         ...children,
-        const SizedBox(height: 10),
       ],
     );
   }

@@ -10,16 +10,20 @@ class VideoPlayerPage extends StatefulWidget {
   final String animeTitle;
   final String title;
   final String videoUrl;
+  final int startAtSeconds;
   final String description;
   final int episodeCount;
+  final int episodeNumber;
   final String views;
   final String imageUrl;
 
   const VideoPlayerPage({
     super.key,
+    required this.episodeNumber,
     required this.animeTitle,
     required this.title,
     required this.videoUrl,
+    required this.startAtSeconds,
     required this.description,
     required this.episodeCount,
     required this.views,
@@ -37,43 +41,105 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
   late VideoPlayerController _videoController;
   ChewieController? _chewieController;
 
-  // Comments state
   List<Map<String, dynamic>> comments = [];
   bool isLoadingComments = true;
   final TextEditingController _commentController = TextEditingController();
 
-  // Watch history tracking
   Timer? _progressTimer;
   String? _currentImageUrl;
+
+  // ⭐ RESUME
+  int _resumePosition = 0;
 
   @override
   void initState() {
     super.initState();
 
-    // Ambil nomor episode dari title: "Episode 7"
     final parts = widget.title.split("Episode ");
     selectedEpisode = int.tryParse(parts.last) ?? 1;
 
-    // Set image URL for watch history
     _currentImageUrl = widget.imageUrl;
 
-    _videoController = VideoPlayerController.network(widget.videoUrl)
-      ..initialize().then((_) {
-        _chewieController = ChewieController(
-          videoPlayerController: _videoController,
-          autoPlay: true,
-          looping: false,
-        );
-        setState(() {});
-        
-        // Start tracking watch history
-        _startWatchHistoryTracking();
-      });
-
-    // Load comments
+    _initVideoWithResume(); // ✅ GANTI BARIS INI
     _loadComments();
   }
 
+  Future<void> _initVideoWithResume() async {
+    await _loadResumePosition(); // ✅ tunggu dulu
+
+    await _initVideo(); // baru init video
+  }
+
+  // ================= RESUME =================
+  Future<void> _loadResumePosition() async {
+    // 1️⃣ prioritas dari Home (Lanjutkan Menonton)
+    if (widget.startAtSeconds > 0) {
+      _resumePosition = widget.startAtSeconds;
+      return;
+    }
+
+    // 2️⃣ fallback dari database
+    final data = await WatchHistoryService.getProgress(
+      animeTitle: widget.animeTitle,
+      episodeNumber: selectedEpisode,
+    );
+
+    if (data != null) {
+      _resumePosition = data['watched_duration'] ?? 0;
+    }
+  }
+
+  Future<void> _applyResumePosition() async {
+    if (_resumePosition <= 0) return;
+    if (!_videoController.value.isInitialized) return;
+
+    try {
+      await _videoController.seekTo(Duration(seconds: _resumePosition));
+    } catch (_) {
+      // biarin, biar ga crash
+    }
+  }
+
+  Future<void> _initVideo() async {
+    if (widget.videoUrl.isEmpty) {
+      _showError("Video belum tersedia");
+      return;
+    }
+
+    try {
+      _videoController = VideoPlayerController.networkUrl(
+        Uri.parse(widget.videoUrl),
+      );
+
+      await _videoController.initialize();
+
+      if (_resumePosition > 0) {
+        await _videoController.seekTo(Duration(seconds: _resumePosition));
+      }
+
+      _chewieController = ChewieController(
+        videoPlayerController: _videoController,
+        autoPlay: true,
+        looping: false,
+        errorBuilder: (context, errorMessage) {
+          return const Center(
+            child: Text(
+              "Gagal memuat video",
+              style: TextStyle(color: Colors.white),
+            ),
+          );
+        },
+      );
+
+      setState(() {});
+      _startWatchHistoryTracking();
+    } catch (e) {
+      print("❌ Video init error: $e");
+      _showError("Gagal memutar video");
+    }
+  }
+
+  // ================= COMMENTS =================
   Future<void> _loadComments() async {
     setState(() => isLoadingComments = true);
     final fetchedComments = await CommentService.getComments(
@@ -97,17 +163,17 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
 
     if (success) {
       _commentController.clear();
-      _loadComments(); // Reload comments
+      _loadComments();
     }
   }
 
+  // ================= WATCH HISTORY =================
   void _startWatchHistoryTracking() {
-    // Save initial watch history
     _saveWatchHistory();
 
-    // Update progress every 10 seconds
-    _progressTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
-      if (_videoController.value.isInitialized && _videoController.value.isPlaying) {
+    _progressTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      if (_videoController.value.isInitialized &&
+          _videoController.value.isPlaying) {
         _updateProgress();
       }
     });
@@ -116,14 +182,11 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
   Future<void> _saveWatchHistory() async {
     if (!_videoController.value.isInitialized) return;
 
-    final watchedDuration = _videoController.value.position.inSeconds;
-    final totalDuration = _videoController.value.duration.inSeconds;
-
-    await WatchHistoryService.saveWatchHistory(
+    await WatchHistoryService.saveProgress(
       animeTitle: widget.animeTitle,
       episodeNumber: selectedEpisode,
-      watchedDuration: watchedDuration,
-      totalDuration: totalDuration,
+      watchedDuration: _videoController.value.position.inSeconds,
+      totalDuration: _videoController.value.duration.inSeconds,
       imageUrl: _currentImageUrl ?? '',
       episodeLabel: "Episode $selectedEpisode",
     );
@@ -132,25 +195,31 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
   Future<void> _updateProgress() async {
     if (!_videoController.value.isInitialized) return;
 
-    final watchedDuration = _videoController.value.position.inSeconds;
-
     await WatchHistoryService.updateProgress(
       animeTitle: widget.animeTitle,
       episodeNumber: selectedEpisode,
-      watchedDuration: watchedDuration,
+      watchedDuration: _videoController.value.position.inSeconds,
     );
   }
 
   @override
   void dispose() {
-    // Save final progress before disposing
-    _updateProgress();
-    
+    if (_videoController.value.isInitialized) {
+      _updateProgress(); // ✅ JANGAN KIRIM PARAMETER
+    }
+
     _progressTimer?.cancel();
-    _videoController.dispose();
     _chewieController?.dispose();
+    _videoController.dispose();
     _commentController.dispose();
     super.dispose();
+  }
+
+  void _showError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -171,19 +240,25 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
                 isLandscape
                     ? Expanded(
                         child: Center(
-                          child: _chewieController != null &&
+                          child:
+                              _chewieController != null &&
                                   _videoController.value.isInitialized
                               ? Chewie(controller: _chewieController!)
-                              : const CircularProgressIndicator(color: Colors.white),
+                              : const CircularProgressIndicator(
+                                  color: Colors.white,
+                                ),
                         ),
                       )
                     : AspectRatio(
                         aspectRatio: 16 / 9,
-                        child: _chewieController != null &&
+                        child:
+                            _chewieController != null &&
                                 _videoController.value.isInitialized
                             ? Chewie(controller: _chewieController!)
                             : const Center(
-                                child: CircularProgressIndicator(color: Colors.white),
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                ),
                               ),
                       ),
 
@@ -251,75 +326,80 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
                           const SizedBox(height: 20),
 
                           // ===============================
-// EPISODE LIST
-// ===============================
-const Text(
-  "Episode List",
-  style: TextStyle(
-    fontSize: 20,
-    fontWeight: FontWeight.bold,
-    color: Colors.white,
-  ),
-),
-const SizedBox(height: 12),
+                          // EPISODE LIST
+                          // ===============================
+                          const Text(
+                            "Episode List",
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
 
-SizedBox(
-  height: 60,
-  child: ListView.separated(
-    scrollDirection: Axis.horizontal,
-    itemCount: widget.episodeCount,
-    separatorBuilder: (_, __) => const SizedBox(width: 10),
-    itemBuilder: (context, index) {
-      final ep = index + 1;
+                          SizedBox(
+                            height: 60,
+                            child: ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: widget.episodeCount,
+                              separatorBuilder: (_, __) =>
+                                  const SizedBox(width: 10),
+                              itemBuilder: (context, index) {
+                                final ep = index + 1;
 
-      return GestureDetector(
-        onTap: () async {
-          final nextVideoUrl = await VideoService.getVideoUrl(
-            widget.animeTitle,
-            ep,
-          );
+                                return GestureDetector(
+                                  onTap: () async {
+                                    final nextVideoUrl =
+                                        await VideoService.getVideoUrl(
+                                          widget.animeTitle,
+                                          ep,
+                                        );
 
-          if (!context.mounted) return;
+                                    if (!context.mounted) return;
 
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (_) => VideoPlayerPage(
-                animeTitle: widget.animeTitle,
-                title: "Episode $ep",
-                videoUrl: nextVideoUrl,
-                description: widget.description,
-                episodeCount: widget.episodeCount,
-                views: widget.views,
-                imageUrl: widget.imageUrl,
-              ),
-            ),
-          );
-        },
-        child: Container(
-          width: 55,
-          decoration: BoxDecoration(
-            color: ep == selectedEpisode
-                ? Colors.white
-                : Colors.grey.shade800,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            "$ep",
-            style: TextStyle(
-              fontSize: 18,
-              color: ep == selectedEpisode
-                  ? Colors.black
-                  : Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-      );
-    },
-  ),
-),
+                                    Navigator.pushReplacement(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => VideoPlayerPage(
+                                          animeTitle: widget.animeTitle,
+                                          title: "Episode $ep",
+                                          videoUrl: nextVideoUrl,
+                                          description: widget.description,
+                                          startAtSeconds: 0,
+                                          episodeCount: widget.episodeCount,
+                                          views: widget.views,
+                                          imageUrl: widget.imageUrl,
+                                          episodeNumber:
+                                              ep, // ✅ TAMBAHKAN INI (Menggunakan variabel 'ep' yang sudah ada)
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  child: Container(
+                                    width: 55,
+                                    decoration: BoxDecoration(
+                                      color: ep == selectedEpisode
+                                          ? Colors.white
+                                          : Colors.grey.shade800,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      "$ep",
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        color: ep == selectedEpisode
+                                            ? Colors.black
+                                            : Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
 
                           const SizedBox(height: 20),
 
@@ -381,7 +461,6 @@ SizedBox(
                               fontSize: 20,
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
-                              
                             ),
                           ),
 
@@ -465,7 +544,10 @@ SizedBox(
                                   shape: BoxShape.circle,
                                   color: Colors.blueAccent,
                                 ),
-                                child: const Icon(Icons.person, color: Colors.white),
+                                child: const Icon(
+                                  Icons.person,
+                                  color: Colors.white,
+                                ),
                               ),
 
                               const SizedBox(width: 10),
@@ -480,7 +562,9 @@ SizedBox(
                                     filled: true,
                                     fillColor: Colors.grey.shade800,
                                     hintText: "Tambahkan komentar...",
-                                    hintStyle: const TextStyle(color: Colors.white54),
+                                    hintStyle: const TextStyle(
+                                      color: Colors.white54,
+                                    ),
                                     contentPadding: const EdgeInsets.symmetric(
                                       horizontal: 14,
                                       vertical: 12,
@@ -491,10 +575,15 @@ SizedBox(
                                     ),
                                     focusedBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(20),
-                                      borderSide: BorderSide(color: Colors.white54),
+                                      borderSide: BorderSide(
+                                        color: Colors.white54,
+                                      ),
                                     ),
                                     suffixIcon: IconButton(
-                                      icon: const Icon(Icons.send, color: Colors.blueAccent),
+                                      icon: const Icon(
+                                        Icons.send,
+                                        color: Colors.blueAccent,
+                                      ),
                                       onPressed: _submitComment,
                                     ),
                                   ),
@@ -516,47 +605,48 @@ SizedBox(
                                   ),
                                 )
                               : comments.isEmpty
-                                  ? Center(
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(32.0),
-                                        child: Column(
-                                          children: [
-                                            Icon(
-                                              Icons.comment_outlined,
-                                              size: 64,
-                                              color: Colors.grey.shade700,
-                                            ),
-                                            const SizedBox(height: 16),
-                                            Text(
-                                              "Belum ada komentar",
-                                              style: TextStyle(
-                                                color: Colors.grey.shade600,
-                                                fontSize: 16,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 8),
-                                            Text(
-                                              "Jadilah yang pertama berkomentar!",
-                                              style: TextStyle(
-                                                color: Colors.grey.shade700,
-                                                fontSize: 14,
-                                              ),
-                                            ),
-                                          ],
+                              ? Center(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(32.0),
+                                    child: Column(
+                                      children: [
+                                        Icon(
+                                          Icons.comment_outlined,
+                                          size: 64,
+                                          color: Colors.grey.shade700,
                                         ),
-                                      ),
-                                    )
-                                  : Column(
-                                      children: comments.map((comment) {
-                                        return _buildComment(
-                                          avatarUrl: comment['user_avatar'] ?? 
-                                              'https://ui-avatars.com/api/?name=${comment['user_name']}&background=random',
-                                          name: comment['user_name'] ?? 'Anonymous',
-                                          time: _formatTime(comment['created_at']),
-                                          comment: comment['comment_text'] ?? '',
-                                        );
-                                      }).toList(),
+                                        const SizedBox(height: 16),
+                                        Text(
+                                          "Belum ada komentar",
+                                          style: TextStyle(
+                                            color: Colors.grey.shade600,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          "Jadilah yang pertama berkomentar!",
+                                          style: TextStyle(
+                                            color: Colors.grey.shade700,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ],
                                     ),
+                                  ),
+                                )
+                              : Column(
+                                  children: comments.map((comment) {
+                                    return _buildComment(
+                                      avatarUrl:
+                                          comment['user_avatar'] ??
+                                          'https://ui-avatars.com/api/?name=${comment['user_name']}&background=random',
+                                      name: comment['user_name'] ?? 'Anonymous',
+                                      time: _formatTime(comment['created_at']),
+                                      comment: comment['comment_text'] ?? '',
+                                    );
+                                  }).toList(),
+                                ),
 
                           const SizedBox(height: 16),
                         ],
@@ -573,7 +663,7 @@ SizedBox(
 
   String _formatTime(String? timestamp) {
     if (timestamp == null) return 'Baru saja';
-    
+
     try {
       final dateTime = DateTime.parse(timestamp);
       final now = DateTime.now();
