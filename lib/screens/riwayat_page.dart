@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:weebsoul/services/watch_history_service.dart';
+import 'package:weebsoul/services/video_service.dart';
+import 'package:weebsoul/screens/vidio_page.dart';
+import 'package:weebsoul/data/anime_data.dart';
+import 'package:weebsoul/models/anime_info.dart';
 
 class RiwayatPage extends StatefulWidget {
   const RiwayatPage({super.key});
@@ -27,9 +31,7 @@ class _RiwayatPageState extends State<RiwayatPage> {
 
   Future<void> _loadWatchHistory() async {
     setState(() => isLoading = true);
-
     final history = await WatchHistoryService.getWatchHistoryGrouped();
-
     setState(() {
       groupedHistory = history;
       isLoading = false;
@@ -72,9 +74,7 @@ class _RiwayatPageState extends State<RiwayatPage> {
             const Color(0xFF1E1E1E),
           ],
         ),
-        borderRadius: const BorderRadius.only(
-          bottomRight: Radius.circular(40),
-        ),
+        borderRadius: const BorderRadius.only(bottomRight: Radius.circular(40)),
       ),
       child: Stack(
         children: [
@@ -103,13 +103,8 @@ class _RiwayatPageState extends State<RiwayatPage> {
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 26,
-                    fontWeight: FontWeight.w900,
-                    shadows: [
-                      BoxShadow(
-                        color: accentBlue.withOpacity(0.5),
-                        blurRadius: 20,
-                      ),
-                    ],
+                    fontWeight: FontWeight.w600,
+                    fontFamily: 'Roboto',
                   ),
                 ),
               ],
@@ -122,7 +117,6 @@ class _RiwayatPageState extends State<RiwayatPage> {
 
   Widget _buildHistoryContent() {
     final hasHistory = groupedHistory.values.any((e) => e.isNotEmpty);
-
     if (!hasHistory) {
       return const Center(
         child: Text(
@@ -173,20 +167,83 @@ class _RiwayatPageState extends State<RiwayatPage> {
       children: historyList.map((history) {
         final watched = _toInt(history['watched_duration']);
         final total = _toInt(history['total_duration'], fallback: 1);
+        final progress = (watched / total).clamp(0.0, 1.0);
 
-        final progress =
-            total <= 0 ? 0.0 : (watched / total).clamp(0.0, 1.0);
+        final String animeTitle = (history['anime_title'] ?? 'Unknown')
+            .toString();
+        final int episodeNum = _toInt(history['episode_number'], fallback: 1);
+        final String imageUrl = (history['image_url'] ?? '').toString();
 
         return HistoryItem(
-          img: (history['image_url'] ?? '').toString(),
-          title: (history['anime_title'] ?? 'Unknown').toString(),
-          episode: (history['anime_episode_label'] ??
-                  'Episode ${history['episode_number'] ?? '-'}')
+          img: imageUrl,
+          title: animeTitle,
+          episode: (history['anime_episode_label'] ?? 'Episode $episodeNum')
               .toString(),
           watchedTime: _formatDuration(watched),
           totalTime: _formatDuration(total),
           progress: progress,
           accentColor: accentBlue,
+          onTap: () async {
+            // Loading Dialog agar user tahu proses sedang berjalan
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (c) => const Center(child: CircularProgressIndicator()),
+            );
+
+            try {
+              // 1. CARI DATA LENGKAP DARI FILE LOKAL (SINKRONISASI)
+              final allAnime = [
+                ...ongoingAnime,
+                ...completedAnime,
+                ...mingguAnime,
+              ];
+              AnimeInfo? foundAnime;
+              try {
+                foundAnime = allAnime.firstWhere(
+                  (anime) =>
+                      anime.title.trim().toLowerCase() ==
+                      animeTitle.trim().toLowerCase(),
+                );
+              } catch (_) {
+                foundAnime = null;
+              }
+
+              // 2. AMBIL URL TERBARU (Link streaming)
+              final videoUrl = await VideoService.getVideoUrl(
+                animeTitle,
+                episodeNum,
+              );
+
+              if (!mounted) return;
+              Navigator.pop(context); // Tutup loading
+
+              // 3. KIRIM DATA LENGKAP KE PLAYER AGAR DESKRIPSI & LIST EPISODE MUNCUL
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => VideoPlayerPage(
+                    animeTitle: animeTitle,
+                    episodeNumber: episodeNum,
+                    title:
+                        history['anime_episode_label'] ?? "Episode $episodeNum",
+                    videoUrl: videoUrl,
+                    startAtSeconds: watched, // RESUME KE DETIK TERAKHIR
+                    imageUrl: imageUrl,
+                    description:
+                        foundAnime?.description ?? "Deskripsi tidak tersedia.",
+                    episodeCount: foundAnime?.episodes.length ?? episodeNum,
+                    views: foundAnime?.views ?? "0",
+                  ),
+                ),
+              ).then((_) => _loadWatchHistory()); // Refresh saat balik
+            } catch (e) {
+              if (mounted) Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text("Gagal memuat video")),
+              );
+            }
+          },
         );
       }).toList(),
     );
@@ -194,9 +251,7 @@ class _RiwayatPageState extends State<RiwayatPage> {
 
   int _toInt(dynamic value, {int fallback = 0}) {
     if (value == null) return fallback;
-    if (value is int) return value;
-    if (value is String) return int.tryParse(value) ?? fallback;
-    return fallback;
+    return int.tryParse(value.toString()) ?? (value is int ? value : fallback);
   }
 
   String _formatDuration(int seconds) {
@@ -205,13 +260,10 @@ class _RiwayatPageState extends State<RiwayatPage> {
   }
 }
 
-/* ===== WIDGET PENDUKUNG ===== */
-
 class HistoryDateSection extends StatelessWidget {
   final String date;
   final List<Widget> children;
   final Color accentColor;
-
   const HistoryDateSection({
     super.key,
     required this.date,
@@ -224,11 +276,15 @@ class HistoryDateSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(date,
-            style: const TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold)),
+        const SizedBox(height: 10),
+        Text(
+          date,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         const SizedBox(height: 15),
         ...children,
       ],
@@ -237,13 +293,10 @@ class HistoryDateSection extends StatelessWidget {
 }
 
 class HistoryItem extends StatelessWidget {
-  final String img;
-  final String title;
-  final String episode;
-  final String watchedTime;
-  final String totalTime;
+  final String img, title, episode, watchedTime, totalTime;
   final double progress;
   final Color accentColor;
+  final VoidCallback onTap;
 
   const HistoryItem({
     super.key,
@@ -254,109 +307,88 @@ class HistoryItem extends StatelessWidget {
     required this.totalTime,
     required this.progress,
     required this.accentColor,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 20),
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: const Color(0xFF252525),
+      margin: const EdgeInsets.only(bottom: 15),
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Thumbnail
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: img.isNotEmpty
-                ? Image.network(
-                    img,
-                    width: 90,
-                    height: 90,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        width: 90,
-                        height: 90,
-                        color: Colors.grey[800],
-                        child: const Icon(Icons.broken_image, color: Colors.white54),
-                      );
-                    },
-                  )
-                : Container(
-                    width: 90,
-                    height: 90,
-                    color: Colors.grey[800],
-                    child: const Icon(Icons.movie, color: Colors.white54),
-                  ),
+        child: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: const Color(0xFF252525),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white.withOpacity(0.08)),
           ),
-          const SizedBox(width: 15),
-
-          // Info Detail
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const SizedBox(height: 4),
-                // Judul
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+          child: Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: Image.network(
+                  img,
+                  width: 90,
+                  height: 70,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) =>
+                      Container(width: 90, height: 70, color: Colors.grey),
                 ),
-                const SizedBox(height: 6),
-
-                // Episode (Biru)
-                Text(
-                  episode,
-                  style: TextStyle(
-                    color: accentColor,
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 10),
-
-                // Waktu
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              ),
+              const SizedBox(width: 15),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      watchedTime,
-                      style: const TextStyle(color: Colors.grey, fontSize: 11),
+                      title,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     Text(
-                      totalTime,
-                      style: const TextStyle(color: Colors.grey, fontSize: 11),
+                      episode,
+                      style: TextStyle(color: accentColor, fontSize: 12),
+                    ),
+                    const SizedBox(height: 8),
+                    LinearProgressIndicator(
+                      value: progress,
+                      backgroundColor: Colors.white10,
+                      color: accentColor,
+                      minHeight: 4,
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          watchedTime,
+                          style: const TextStyle(
+                            color: Colors.grey,
+                            fontSize: 10,
+                          ),
+                        ),
+                        Text(
+                          totalTime,
+                          style: const TextStyle(
+                            color: Colors.grey,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-                const SizedBox(height: 6),
-
-                // Progress Bar
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: progress,
-                    minHeight: 4,
-                    backgroundColor: Colors.black45,
-                    valueColor: AlwaysStoppedAnimation<Color>(accentColor),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
