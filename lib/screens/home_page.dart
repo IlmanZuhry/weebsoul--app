@@ -25,10 +25,10 @@ class _HomePageState extends State<HomePage> {
   int currentBanner = 0;
   int currentBottomIndex = 0;
 
-  // ⚡ Data user dari Supabase
+  // Data user dari Supabase
   String userName = "User";
 
-  // 🔥 DATA TERAKHIR DITONTON
+  // DATA TERAKHIR DITONTON
   Map<String, dynamic>? _lastWatched;
 
   final List<String> banners = [
@@ -57,11 +57,11 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     _pageController = PageController(initialPage: initialPage);
     currentBanner = initialPage % banners.length;
-    _loadUserData(); // ⚡ Load user data
-    fetchLastWatched(); // 🔥 Ambil data terakhir ditonton
+    _loadUserData(); //Load user data
+    fetchLastWatched(); //Ambil data terakhir ditonton
   }
 
-  // ⚡ Ambil username dari Supabase
+  //Ambil username dari Supabase
   Future<void> _loadUserData() async {
     final user = Supabase.instance.client.auth.currentUser;
     if (user != null) {
@@ -72,7 +72,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   // ============================================================
-  // 🔥 FETCH DATA TERAKHIR DITONTON DARI SUPABASE (KODE BARU)
+  // FETCH DATA TERAKHIR DITONTON DARI SUPABASE (KODE BARU)
   // ============================================================
   Future<void> fetchLastWatched() async {
     final supabase = Supabase.instance.client;
@@ -149,7 +149,7 @@ class _HomePageState extends State<HomePage> {
                   style: TextStyle(color: Colors.white70),
                 ),
                 onPressed: () {
-                  // ❌ cuma tutup dialog
+                  // cuma tutup dialog
                   Navigator.pop(context);
                 },
               ),

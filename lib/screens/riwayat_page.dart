@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:weebsoul/services/watch_history_service.dart';
 import 'package:weebsoul/services/video_service.dart';
 import 'package:weebsoul/screens/vidio_page.dart';
-// IMPORT WAJIB: Supaya data deskripsi & episode list tidak hilang
 import 'package:weebsoul/data/anime_data.dart';
 import 'package:weebsoul/models/anime_info.dart';
 
